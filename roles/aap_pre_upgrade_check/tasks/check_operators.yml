@@ -82,7 +82,7 @@
   ansible.builtin.set_fact:
     aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
   loop: "{{ aap_check_results.operators.pods | dict2items }}"
-  when: item.value.status != 'Running' or item.value.ready is not match('\\d+/\\1')
+  when: item.value.status != 'Running' or not (item.value.ready is match('(\\d+)/(\\1)') and item.value.ready.split('/')[0] == item.value.ready.split('/')[1])
   vars:
     warning_msg: "Operator pod {{ item.key }} not fully ready ({{ item.value.ready }}, status: {{ item.value.status }})"
 

@@ -1,0 +1,14 @@
+---
+- name: Check aap-lab CRC AAP Deployment
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    aap_kubeconfig_path: ~/.aap-lab/kubeconfig.microshift
+    aap_namespace: aap-operator
+    aap_report_filename: "aap-lab-pre-upgrade-{{ ansible_date_time.iso8601_basic_short }}.md"
+    # CRC uses internal/embedded database, so no external database namespace
+    aap_database_namespace: ""
+
+  roles:
+    - aap_pre_upgrade_check

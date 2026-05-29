@@ -126,8 +126,9 @@
   when:
     - aap_check_results.database.external | default(false)
     - aap_check_results.database.cluster_status | default('') != 'Cluster in healthy state'
+    - aap_check_results.database.cluster_name is defined
   vars:
-    issue_msg: "Database cluster {{ aap_check_results.database.cluster_name }} is unhealthy (status: {{ aap_check_results.database.cluster_status }})"
+    issue_msg: "Database cluster {{ aap_check_results.database.cluster_name | default('unknown') }} is unhealthy (status: {{ aap_check_results.database.cluster_status | default('unknown') }})"
 
 - name: Check for database instance mismatch
   ansible.builtin.set_fact:
