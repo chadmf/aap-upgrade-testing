@@ -1,6 +1,7 @@
 # Contributing to AAP Upgrade Testing
 
-Thank you for your interest in contributing to the AAP Upgrade Testing project! This document provides guidelines for contributing code, documentation, and improvements.
+Thank you for your interest in contributing to the AAP Upgrade Testing project! This document
+provides guidelines for contributing code, documentation, and improvements.
 
 ## Table of Contents
 
@@ -32,23 +33,27 @@ This project follows Red Hat's Community Code of Conduct. Be respectful, profess
 1. **Fork the repository** on GitHub
 
 2. **Clone your fork**:
+
    ```bash
    git clone git@github.com:<your-username>/aap-upgrade-testing.git
    cd aap-upgrade-testing
    ```
 
 3. **Add upstream remote**:
+
    ```bash
    git remote add upstream git@github.com:<org>/aap-upgrade-testing.git
    ```
 
 4. **Install pre-commit hooks** (recommended):
+
    ```bash
    pip install pre-commit
    pre-commit install
    ```
 
 5. **Install development dependencies**:
+
    ```bash
    pip install ansible-core ansible-lint yamllint
    ansible-galaxy collection install -r requirements.yml
@@ -68,7 +73,8 @@ Use descriptive branch names with prefixes:
 - `test/` - Test additions or updates
 
 Examples:
-```bash
+
+```text
 feature/add-etcd-health-check
 fix/database-password-logging
 docs/update-troubleshooting-guide
@@ -78,6 +84,7 @@ security/sanitize-debug-output
 ### Making Changes
 
 1. **Sync with upstream**:
+
    ```bash
    git fetch upstream
    git checkout main
@@ -85,6 +92,7 @@ security/sanitize-debug-output
    ```
 
 2. **Create a feature branch**:
+
    ```bash
    git checkout -b feature/my-new-feature
    ```
@@ -92,26 +100,29 @@ security/sanitize-debug-output
 3. **Make your changes** following quality standards (see below)
 
 4. **Test locally**:
+
    ```bash
    # Run linters
    yamllint -c .yamllint.yml .
    ansible-lint --profile production
-   
+
    # Syntax check
    ansible-playbook --syntax-check playbooks/pre_upgrade_check.yml
-   
+
    # Test against a cluster (optional but recommended)
    ansible-playbook playbooks/pre_upgrade_check.yml \
      -e aap_kubeconfig_path=~/.kube/test-config
    ```
 
 5. **Commit your changes**:
+
    ```bash
    git add .
    git commit -m "feat(check-nodes): add disk space validation"
    ```
 
 6. **Push to your fork**:
+
    ```bash
    git push origin feature/my-new-feature
    ```
@@ -129,6 +140,7 @@ All code must pass the following linters:
 - **markdownlint** - Documentation formatting
 
 Run locally before committing:
+
 ```bash
 pre-commit run --all-files
 ```
@@ -177,6 +189,7 @@ pre-commit run --all-files
 ### Critical Security Practices
 
 1. **Never log secrets**:
+
    ```yaml
    - name: Extract database password
      set_fact:
@@ -185,6 +198,7 @@ pre-commit run --all-files
    ```
 
 2. **Validate all inputs**:
+
    ```yaml
    - name: Validate kubeconfig path
      assert:
@@ -221,7 +235,7 @@ See `.github/SECURITY_REVIEW.md` for the complete security review checklist.
 
 Use conventional commits:
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -230,6 +244,7 @@ Use conventional commits:
 ```
 
 **Types:**
+
 - `feat` - New feature
 - `fix` - Bug fix
 - `docs` - Documentation changes
@@ -239,7 +254,8 @@ Use conventional commits:
 - `security` - Security fixes
 
 **Examples:**
-```
+
+```text
 feat(database): add PostgreSQL cluster version check
 
 Add validation for PostgreSQL cluster version compatibility
@@ -249,7 +265,7 @@ minimum supported version.
 Closes #42
 ```
 
-```
+```text
 security(check-database): add no_log to credential extraction
 
 Prevent database credentials from appearing in Ansible output

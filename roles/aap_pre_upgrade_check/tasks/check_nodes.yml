@@ -16,13 +16,22 @@
 
 - name: Parse node metrics
   ansible.builtin.set_fact:
-    node_metrics: "{{ node_metrics | default({}) | combine({item.split()[0]: {'cpu': item.split()[1], 'cpu_percent': item.split()[2] | regex_replace('%', '') | int, 'memory': item.split()[3], 'memory_percent': item.split()[4] | regex_replace('%', '') | int}}) }}"
+    node_metrics: >-
+      {{ node_metrics | default({}) | combine({
+        item.split()[0]: {
+          'cpu': item.split()[1],
+          'cpu_percent': item.split()[2] | regex_replace('%', '') | int,
+          'memory': item.split()[3],
+          'memory_percent': item.split()[4] | regex_replace('%', '') | int
+        }
+      }) }}
   loop: "{{ node_metrics_raw.stdout_lines }}"
   when: node_metrics_raw.rc == 0
 
 - name: Analyze node health
   ansible.builtin.set_fact:
-    aap_check_results: "{{ aap_check_results | combine({'nodes': node_analysis}, recursive=true) }}"
+    aap_check_results: >-
+      {{ aap_check_results | combine({'nodes': node_analysis}, recursive=true) }}
   vars:
     node_analysis: |
       {%- set nodes = {} -%}
@@ -33,15 +42,26 @@
           {%- set _ = conditions.update({condition.type: condition.status}) -%}
         {%- endfor -%}
         {%- set metrics = node_metrics[node_name] | default({}) -%}
+        {%- set node_labels = node.metadata.labels -%}
+        {%- set master_role = node_labels.get('node-role.kubernetes.io/master', '')
+                              | ternary(['master'], []) -%}
+        {%- set worker_role = node_labels.get('node-role.kubernetes.io/worker', '')
+                              | ternary(['worker'], []) -%}
+        {%- set control_plane_role = node_labels.get('node-role.kubernetes.io/control-plane', '')
+                                     | ternary(['control-plane'], []) -%}
+        {%- set node_roles = master_role + worker_role + control_plane_role -%}
+        {%- set internal_ip = (node.status.addresses
+                               | selectattr('type', 'equalto', 'InternalIP')
+                               | map(attribute='address') | list | first) | default('') -%}
         {%- set _ = nodes.update({
           node_name: {
             'status': conditions.get('Ready', 'Unknown'),
-            'roles': node.metadata.labels.get('node-role.kubernetes.io/master', '') | ternary(['master'], []) + node.metadata.labels.get('node-role.kubernetes.io/worker', '') | ternary(['worker'], []) + node.metadata.labels.get('node-role.kubernetes.io/control-plane', '') | ternary(['control-plane'], []),
+            'roles': node_roles,
             'version': node.status.nodeInfo.kubeletVersion,
             'os_image': node.status.nodeInfo.osImage,
             'kernel': node.status.nodeInfo.kernelVersion,
             'container_runtime': node.status.nodeInfo.containerRuntimeVersion,
-            'internal_ip': (node.status.addresses | selectattr('type', 'equalto', 'InternalIP') | map(attribute='address') | list | first) | default(''),
+            'internal_ip': internal_ip,
             'cpu_usage': metrics.get('cpu', 'N/A'),
             'cpu_percent': metrics.get('cpu_percent', 0),
             'memory_usage': metrics.get('memory', 'N/A'),
@@ -54,19 +74,26 @@
 
 - name: Check for node issues
   ansible.builtin.set_fact:
-    aap_check_results: "{{ aap_check_results | combine({'issues': aap_check_results.issues + [issue_msg]}, recursive=true) }}"
+    aap_check_results: >-
+      {{ aap_check_results | combine({'issues': aap_check_results.issues + [issue_msg]}, recursive=true) }}
   loop: "{{ aap_check_results.nodes | dict2items }}"
   when: item.value.status != 'True'
   vars:
-    issue_msg: "Node {{ item.key }} is not Ready (status: {{ item.value.status }})"
+    issue_msg: >-
+      Node {{ item.key }} is not Ready (status: {{ item.value.status }})
 
 - name: Check for resource warnings
   ansible.builtin.set_fact:
-    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+    aap_check_results: >-
+      {{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}
   loop: "{{ aap_check_results.nodes | dict2items }}"
-  when: item.value.cpu_percent > aap_node_cpu_warning_threshold or item.value.memory_percent > aap_node_memory_warning_threshold
+  when: >-
+    item.value.cpu_percent > aap_node_cpu_warning_threshold or
+    item.value.memory_percent > aap_node_memory_warning_threshold
   vars:
-    warning_msg: "Node {{ item.key }} high resource usage (CPU: {{ item.value.cpu_percent }}%, Memory: {{ item.value.memory_percent }}%)"
+    warning_msg: >-
+      Node {{ item.key }} high resource usage
+      (CPU: {{ item.value.cpu_percent }}%, Memory: {{ item.value.memory_percent }}%)
 
 - name: Display node status summary
   ansible.builtin.debug:

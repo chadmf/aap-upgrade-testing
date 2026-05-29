@@ -34,7 +34,9 @@
 
 - name: Fail if critical issues found
   ansible.builtin.fail:
-    msg: "Pre-upgrade check found {{ aap_check_results.issues | length }} critical issue(s). Review the report at {{ aap_report_output_dir }}/{{ aap_report_filename }}"
+    msg: >-
+      Pre-upgrade check found {{ aap_check_results.issues | length }} critical issue(s).
+      Review the report at {{ aap_report_output_dir }}/{{ aap_report_filename }}
   when:
     - aap_check_results.issues | length > 0
     - aap_fail_on_degraded_pods | bool

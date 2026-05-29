@@ -4,13 +4,15 @@ This document describes the review process for contributions to the AAP Upgrade 
 
 ## Overview
 
-All changes to the `main` branch require review. The review process ensures code quality, security, and architectural soundness before merging.
+All changes to the `main` branch require review. The review process ensures code quality,
+security, and architectural soundness before merging.
 
 ## When Reviews Are Required
 
 ### All Pull Requests
 
 **Every PR to `main` requires:**
+
 - ✅ Automated checks (CI) pass
 - ✅ Code review by at least 1 maintainer
 - ✅ All conversations resolved
@@ -18,6 +20,7 @@ All changes to the `main` branch require review. The review process ensures code
 ### Architectural Review
 
 **Required for:**
+
 - New task files or major modifications to existing ones
 - Changes to error handling patterns
 - Modularity or extensibility changes
@@ -26,6 +29,7 @@ All changes to the `main` branch require review. The review process ensures code
 - Integration with external systems
 
 **Triggered by:**
+
 - CODEOWNERS assignment (automatic for `/roles/` changes)
 - Maintainer request
 - PR author self-identifies need
@@ -33,6 +37,7 @@ All changes to the `main` branch require review. The review process ensures code
 ### Security Review
 
 **Required for:**
+
 - Secret or credential handling changes
 - Authentication or authorization changes
 - Input validation changes
@@ -42,13 +47,14 @@ All changes to the `main` branch require review. The review process ensures code
 - Changes to GitHub Actions workflows
 
 **Triggered by:**
+
 - CODEOWNERS assignment (automatic for security-sensitive files)
 - Maintainer request
 - Security label applied to PR
 
 ## Review Process Flow
 
-```
+```text
 ┌─────────────────────┐
 │ Developer creates PR│
 └──────────┬──────────┘
@@ -94,6 +100,7 @@ All changes to the `main` branch require review. The review process ensures code
 ### Code Reviewers (Maintainers)
 
 **Focus Areas:**
+
 - ✅ Logic correctness
 - ✅ Ansible best practices
 - ✅ Code style and consistency
@@ -101,6 +108,7 @@ All changes to the `main` branch require review. The review process ensures code
 - ✅ Test coverage (when applicable)
 
 **Use Checklist:**
+
 - Code follows existing patterns
 - Task names are descriptive
 - Variables properly documented in defaults/main.yml
@@ -110,6 +118,7 @@ All changes to the `main` branch require review. The review process ensures code
 - `changed_when` and `failed_when` used correctly
 
 **Review Tools:**
+
 - Read the code in GitHub
 - Clone PR branch for local testing (optional)
 - Run linters locally if needed
@@ -118,6 +127,7 @@ All changes to the `main` branch require review. The review process ensures code
 ### Architecture Reviewers
 
 **Focus Areas:**
+
 - ✅ System design and structure
 - ✅ Modularity and extensibility
 - ✅ Error handling patterns
@@ -125,6 +135,7 @@ All changes to the `main` branch require review. The review process ensures code
 - ✅ Long-term maintainability
 
 **Use Checklist:**
+
 See `.github/ARCHITECTURE_REVIEW.md` for detailed checklist
 
 **Expected Turnaround:** 3 business days
@@ -132,6 +143,7 @@ See `.github/ARCHITECTURE_REVIEW.md` for detailed checklist
 ### Security Reviewers
 
 **Focus Areas:**
+
 - ✅ Credential and secret handling
 - ✅ Input validation
 - ✅ Data exposure (logs, reports, output)
@@ -140,9 +152,11 @@ See `.github/ARCHITECTURE_REVIEW.md` for detailed checklist
 - ✅ Dependency security
 
 **Use Checklist:**
+
 See `.github/SECURITY_REVIEW.md` for detailed checklist
 
 **Expected Turnaround:**
+
 - Critical security fixes: Same day
 - Other security reviews: 3 business days
 
@@ -185,6 +199,7 @@ See `.github/SECURITY_REVIEW.md` for detailed checklist
 ### Code Quality
 
 **Good:**
+
 ```yaml
 - name: Preflight | Validate kubeconfig path
   ansible.builtin.assert:
@@ -195,6 +210,7 @@ See `.github/SECURITY_REVIEW.md` for detailed checklist
 ```
 
 **Needs Improvement:**
+
 ```yaml
 - name: Check path
   shell: test -f {{ aap_kubeconfig_path }}  # No validation, shell injection risk
@@ -203,6 +219,7 @@ See `.github/SECURITY_REVIEW.md` for detailed checklist
 ### Ansible Best Practices
 
 **Good:**
+
 ```yaml
 - name: Database | Extract host from secret
   ansible.builtin.set_fact:
@@ -212,6 +229,7 @@ See `.github/SECURITY_REVIEW.md` for detailed checklist
 ```
 
 **Needs Improvement:**
+
 ```yaml
 - name: Get host
   set_fact:
@@ -222,6 +240,7 @@ See `.github/SECURITY_REVIEW.md` for detailed checklist
 ### Documentation
 
 **Good:**
+
 ```yaml
 # roles/aap_pre_upgrade_check/defaults/main.yml
 
@@ -231,6 +250,7 @@ aap_node_cpu_warning_threshold: 70
 ```
 
 **Needs Improvement:**
+
 ```yaml
 aap_node_cpu_warning_threshold: 70  # No description
 ```
@@ -240,41 +260,47 @@ aap_node_cpu_warning_threshold: 70  # No description
 ### Constructive Comments
 
 **Good:**
-```
-The credential extraction on line 42 needs `no_log: true` to prevent 
-passwords from appearing in Ansible output. See SECURITY_REVIEW.md 
+
+```text
+The credential extraction on line 42 needs `no_log: true` to prevent
+passwords from appearing in Ansible output. See SECURITY_REVIEW.md
 section 2 for examples.
 ```
 
 **Not Helpful:**
-```
+
+```text
 Fix security issue
 ```
 
 ### Asking Questions
 
 **Good:**
-```
-Why did you choose `failed_when: false` here instead of handling the 
-error with a conditional? It would be more explicit to check 
+
+```text
+Why did you choose `failed_when: false` here instead of handling the
+error with a conditional? It would be more explicit to check
 `db_secret_info.resources | length > 0` first.
 ```
 
 **Not Helpful:**
-```
+
+```text
 This is wrong
 ```
 
 ### Suggesting Improvements
 
 **Good:**
-```
-Consider extracting this Jinja2 template to a filter plugin for better 
+
+```text
+Consider extracting this Jinja2 template to a filter plugin for better
 testability and reusability. Example: `{{ data | parse_cluster_info }}`
 ```
 
 **Not Helpful:**
-```
+
+```text
 This should be a filter plugin
 ```
 
@@ -288,7 +314,7 @@ This should be a filter plugin
    - Make the requested change, OR
    - Explain why you disagree (respectfully)
    - Mark conversation as resolved when done
-4. **Push new commits** with fixes (don't force-push during review)
+4. **Push new commits** with fixes (do not force-push during review)
 5. **Request re-review** when all comments addressed
 
 ### Disagreements
@@ -300,7 +326,7 @@ If you disagree with review feedback:
 3. **Propose alternatives** if you see a different solution
 4. **Escalate if needed:**
    - Tag additional reviewers for their input
-   - Request architecture/security review if it's a design question
+   - Request architecture/security review if it is a design question
 
 ## Automated Checks (CI/CD)
 
@@ -321,9 +347,11 @@ If a check fails:
 
 1. **Review the error output** in GitHub Actions
 2. **Fix locally:**
+
    ```bash
    pre-commit run --all-files  # Run all checks
    ```
+
 3. **Push the fix**
 4. **Checks run automatically** on new commit
 
@@ -341,15 +369,18 @@ After all approvals:
 ### 2. Merge Method
 
 **Preferred:** Squash and merge
+
 - Keeps main history clean
 - One commit per feature/fix
 - Preserves PR discussion
 
 **Alternative:** Rebase and merge
+
 - For PRs with clean, meaningful commit history
 - Each commit should be atomic
 
 **Never:** Merge commit
+
 - Creates noise in history
 - Makes bisecting harder
 
@@ -394,21 +425,23 @@ After all approvals:
 ## Review Metrics
 
 We track:
+
 - Time to first review
 - Time to approval
 - Number of review rounds
 - Review rejection rate
 
 Goals:
+
 - 80% of PRs reviewed within SLA
 - Average 1.5 review rounds per PR
-- <10% rejection rate
+- Less than 10% rejection rate
 
 ## Examples
 
 ### Example 1: Simple Bug Fix
 
-```
+```text
 PR: Fix typo in database namespace default
 ├─ Automated checks: ✅ Pass
 ├─ Code review: ✅ Approved (typo fix, no logic change)
@@ -417,7 +450,7 @@ PR: Fix typo in database namespace default
 
 ### Example 2: New Feature
 
-```
+```text
 PR: Add etcd health check task
 ├─ Automated checks: ✅ Pass
 ├─ Code review: ⚠️ Request changes (missing documentation)
@@ -429,7 +462,7 @@ PR: Add etcd health check task
 
 ### Example 3: Security Fix
 
-```
+```text
 PR: Add no_log to credential extraction
 ├─ Automated checks: ✅ Pass
 ├─ Security review: ✅ Approved (critical fix)
@@ -440,12 +473,14 @@ PR: Add no_log to credential extraction
 ## Questions?
 
 See:
+
 - `CONTRIBUTING.md` - How to contribute
 - `docs/REVIEWER_GUIDE.md` - Detailed reviewer instructions
 - `.github/ARCHITECTURE_REVIEW.md` - Architecture review checklist
 - `.github/SECURITY_REVIEW.md` - Security review checklist
 
 Or ask in:
+
 - PR comments
 - GitHub Discussions
 - Team Slack channel
