@@ -1,0 +1,158 @@
+---
+- name: Check for external database configuration
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: external-postgres-configuration-controller
+    namespace: "{{ aap_namespace }}"
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: db_secret_info
+  failed_when: false
+
+- name: Extract database host from secret
+  ansible.builtin.set_fact:
+    db_host: "{{ db_secret_info.resources[0].data.host | b64decode }}"
+    db_type: "{{ db_secret_info.resources[0].data.type | b64decode | default('postgresql') }}"
+  when:
+    - db_secret_info.resources is defined
+    - db_secret_info.resources | length > 0
+
+- name: Parse database namespace from host
+  ansible.builtin.set_fact:
+    detected_db_namespace: "{{ db_host.split('.')[1] }}"
+  when: db_host is defined and '.' in db_host
+
+- name: Use detected or configured database namespace
+  ansible.builtin.set_fact:
+    active_db_namespace: "{{ detected_db_namespace | default(aap_database_namespace) }}"
+  when: db_host is defined
+
+- name: Get cloud-native-postgresql Cluster resources
+  kubernetes.core.k8s_info:
+    api_version: postgresql.cnpg.io/v1
+    kind: Cluster
+    namespace: "{{ active_db_namespace }}"
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: postgres_cluster_info
+  when: db_host is defined
+  failed_when: false
+
+- name: Get database pods
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ active_db_namespace }}"
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: db_pods_info
+  when: db_host is defined
+  failed_when: false
+
+- name: Get postgres operator CSV
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: "{{ aap_namespace }}"
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: postgres_csv_info
+  when: db_host is defined
+  failed_when: false
+
+- name: Analyze database configuration
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'database': db_analysis}, recursive=true) }}"
+  when: db_host is defined
+  vars:
+    db_analysis: |
+      {%- set db_data = {} -%}
+      {%- set _ = db_data.update({
+        'type': db_type,
+        'host': db_host,
+        'namespace': active_db_namespace,
+        'external': true
+      }) -%}
+      {%- if postgres_cluster_info.resources | default([]) | length > 0 -%}
+        {%- set cluster = postgres_cluster_info.resources[0] -%}
+        {%- set cluster_status = cluster.status | default({}) -%}
+        {%- set _ = db_data.update({
+          'cluster_name': cluster.metadata.name,
+          'cluster_age': cluster.metadata.creationTimestamp,
+          'instances': cluster_status.get('instances', 0),
+          'ready_instances': cluster_status.get('readyInstances', 0),
+          'cluster_status': cluster_status.get('phase', 'Unknown'),
+          'primary_pod': cluster_status.get('currentPrimary', 'Unknown')
+        }) -%}
+      {%- endif -%}
+      {%- if db_pods_info.resources | default([]) | length > 0 -%}
+        {%- set pods = {} -%}
+        {%- for pod in db_pods_info.resources -%}
+          {%- set container_statuses = pod.status.get('containerStatuses', []) -%}
+          {%- set restart_count = container_statuses | map(attribute='restartCount') | sum -%}
+          {%- set _ = pods.update({
+            pod.metadata.name: {
+              'status': pod.status.phase,
+              'restarts': restart_count,
+              'age': pod.metadata.creationTimestamp
+            }
+          }) -%}
+        {%- endfor -%}
+        {%- set _ = db_data.update({'pods': pods}) -%}
+      {%- endif -%}
+      {%- if postgres_csv_info.resources | default([]) | length > 0 -%}
+        {%- set postgres_csvs = postgres_csv_info.resources | selectattr('metadata.name', 'match', '.*postgres.*') | list -%}
+        {%- if postgres_csvs | length > 0 -%}
+          {%- set operators = {} -%}
+          {%- for csv in postgres_csvs -%}
+            {%- set _ = operators.update({
+              csv.metadata.name: {
+                'version': csv.spec.version,
+                'phase': csv.status.phase,
+                'replaces': csv.spec.get('replaces', '')
+              }
+            }) -%}
+          {%- endfor -%}
+          {%- set _ = db_data.update({'operators': operators}) -%}
+        {%- endif -%}
+      {%- endif -%}
+      {{ db_data }}
+
+- name: Set embedded database flag
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'database': {'type': 'embedded', 'external': false}}, recursive=true) }}"
+  when: db_host is not defined
+
+- name: Check for unhealthy database cluster
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'issues': aap_check_results.issues + [issue_msg]}, recursive=true) }}"
+  when:
+    - aap_check_results.database.external | default(false)
+    - aap_check_results.database.cluster_status | default('') != 'Cluster in healthy state'
+  vars:
+    issue_msg: "Database cluster {{ aap_check_results.database.cluster_name }} is unhealthy (status: {{ aap_check_results.database.cluster_status }})"
+
+- name: Check for database instance mismatch
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+  when:
+    - aap_check_results.database.external | default(false)
+    - aap_check_results.database.instances | default(0) != aap_check_results.database.ready_instances | default(0)
+  vars:
+    warning_msg: "Database cluster has {{ aap_check_results.database.ready_instances }}/{{ aap_check_results.database.instances }} instances ready"
+
+- name: Check for stuck database operator upgrades
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+  loop: "{{ aap_check_results.database.operators | default({}) | dict2items }}"
+  when: item.value.phase in ['Replacing', 'Failed']
+  vars:
+    warning_msg: "Database operator {{ item.key }} in {{ item.value.phase }} state (version {{ item.value.version }})"
+
+- name: Fail on unhealthy database if configured
+  ansible.builtin.fail:
+    msg: "Database cluster is unhealthy. Check issues list for details."
+  when:
+    - aap_fail_on_unhealthy_database | bool
+    - aap_check_results.issues | select('match', '.*Database cluster.*unhealthy.*') | list | length > 0
+
+- name: Display database status summary
+  ansible.builtin.debug:
+    msg: "Database type: {{ aap_check_results.database.type }}, External: {{ aap_check_results.database.external }}"

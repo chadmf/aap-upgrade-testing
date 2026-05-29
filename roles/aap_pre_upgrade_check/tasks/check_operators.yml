@@ -1,0 +1,106 @@
+---
+- name: Get ClusterServiceVersion information
+  kubernetes.core.k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: "{{ aap_namespace }}"
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: csv_info
+
+- name: Get operator pods
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ aap_namespace }}"
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: operator_pods_info
+
+- name: Analyze AAP operator CSVs
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'operators': {'csvs': csv_analysis}}, recursive=true) }}"
+  vars:
+    csv_analysis: |
+      {%- set csvs = {} -%}
+      {%- for csv in csv_info.resources -%}
+        {%- if 'ansible' in csv.metadata.name.lower() or 'aap' in csv.metadata.name.lower() or 'postgres' in csv.metadata.name.lower() -%}
+          {%- set _ = csvs.update({
+            csv.metadata.name: {
+              'display_name': csv.spec.displayName,
+              'version': csv.spec.version,
+              'phase': csv.status.phase,
+              'replaces': csv.spec.replaces | default(''),
+              'reason': csv.status.get('reason', ''),
+              'message': csv.status.get('message', '')
+            }
+          }) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ csvs }}
+
+- name: Analyze operator pods
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'operators': {'pods': pod_analysis}}, recursive=true) }}"
+  vars:
+    pod_analysis: |
+      {%- set pods = {} -%}
+      {%- for pod in operator_pods_info.resources -%}
+        {%- if 'operator' in pod.metadata.name.lower() -%}
+          {%- set container_statuses = pod.status.get('containerStatuses', []) -%}
+          {%- set ready_count = container_statuses | selectattr('ready', 'equalto', true) | list | length -%}
+          {%- set total_count = container_statuses | length -%}
+          {%- set restart_count = container_statuses | map(attribute='restartCount') | sum -%}
+          {%- set _ = pods.update({
+            pod.metadata.name: {
+              'status': pod.status.phase,
+              'ready': ready_count ~ '/' ~ total_count,
+              'restarts': restart_count,
+              'age': pod.metadata.creationTimestamp,
+              'node': pod.spec.get('nodeName', 'N/A')
+            }
+          }) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ pods }}
+
+- name: Check for CSV failures
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'issues': aap_check_results.issues + [issue_msg]}, recursive=true) }}"
+  loop: "{{ aap_check_results.operators.csvs | dict2items }}"
+  when: item.value.phase == 'Failed'
+  vars:
+    issue_msg: "CSV {{ item.key }} is in Failed state: {{ item.value.message }}"
+
+- name: Check for stuck CSV upgrades
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+  loop: "{{ aap_check_results.operators.csvs | dict2items }}"
+  when: item.value.phase == 'Replacing'
+  vars:
+    warning_msg: "CSV {{ item.key }} stuck in Replacing state (upgrading to {{ item.value.version }})"
+
+- name: Check for degraded operator pods
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+  loop: "{{ aap_check_results.operators.pods | dict2items }}"
+  when: item.value.status != 'Running' or item.value.ready is not match('\\d+/\\1')
+  vars:
+    warning_msg: "Operator pod {{ item.key }} not fully ready ({{ item.value.ready }}, status: {{ item.value.status }})"
+
+- name: Verify expected operators are present
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+  loop: "{{ aap_expected_operators }}"
+  when: not (aap_check_results.operators.pods.keys() | select('match', item) | list)
+  vars:
+    warning_msg: "Expected operator pod {{ item }} not found"
+
+- name: Fail on CSV failures if configured
+  ansible.builtin.fail:
+    msg: "One or more CSVs are in Failed state. Check issues list for details."
+  when:
+    - aap_fail_on_failed_csv | bool
+    - aap_check_results.operators.csvs | dict2items | selectattr('value.phase', 'equalto', 'Failed') | list | length > 0
+
+- name: Display operator status summary
+  ansible.builtin.debug:
+    msg: "Checked {{ aap_check_results.operators.csvs | length }} CSV(s) and {{ aap_check_results.operators.pods | length }} operator pod(s)"

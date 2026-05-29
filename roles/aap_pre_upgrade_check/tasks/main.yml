@@ -1,0 +1,37 @@
+---
+- name: Pre-flight validation
+  ansible.builtin.include_tasks: preflight.yml
+  tags:
+    - preflight
+    - always
+
+- name: Check OpenShift node health
+  ansible.builtin.include_tasks: check_nodes.yml
+  tags:
+    - nodes
+    - infrastructure
+
+- name: Check AAP operator status
+  ansible.builtin.include_tasks: check_operators.yml
+  tags:
+    - operators
+    - aap
+
+- name: Check AAP instance status
+  ansible.builtin.include_tasks: check_aap_instance.yml
+  tags:
+    - aap
+    - instance
+
+- name: Check database backend
+  ansible.builtin.include_tasks: check_database.yml
+  tags:
+    - database
+    - postgres
+
+- name: Generate health report
+  ansible.builtin.include_tasks: generate_report.yml
+  when: aap_generate_report | bool
+  tags:
+    - report
+    - always

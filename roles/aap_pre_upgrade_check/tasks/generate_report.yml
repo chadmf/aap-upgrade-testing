@@ -1,0 +1,40 @@
+---
+- name: Generate pre-upgrade check report
+  ansible.builtin.template:
+    src: pre_upgrade_report.md.j2
+    dest: "{{ aap_report_output_dir }}/{{ aap_report_filename }}"
+    mode: "0644"
+  delegate_to: localhost
+
+- name: Display report location
+  ansible.builtin.debug:
+    msg: "Pre-upgrade check report saved to: {{ aap_report_output_dir }}/{{ aap_report_filename }}"
+
+- name: Display summary
+  ansible.builtin.debug:
+    msg:
+      - "===== Pre-Upgrade Check Summary ====="
+      - "Total Issues: {{ aap_check_results.issues | length }}"
+      - "Total Warnings: {{ aap_check_results.warnings | length }}"
+      - "Nodes Checked: {{ aap_check_results.nodes | length }}"
+      - "Operators Checked: {{ aap_check_results.operators.pods | length }}"
+      - "AAP Instances: {{ aap_check_results.aap_instance | length }}"
+      - "Database Type: {{ aap_check_results.database.type }}"
+      - "======================================"
+
+- name: Display issues
+  ansible.builtin.debug:
+    msg: "{{ aap_check_results.issues }}"
+  when: aap_check_results.issues | length > 0
+
+- name: Display warnings
+  ansible.builtin.debug:
+    msg: "{{ aap_check_results.warnings }}"
+  when: aap_check_results.warnings | length > 0
+
+- name: Fail if critical issues found
+  ansible.builtin.fail:
+    msg: "Pre-upgrade check found {{ aap_check_results.issues | length }} critical issue(s). Review the report at {{ aap_report_output_dir }}/{{ aap_report_filename }}"
+  when:
+    - aap_check_results.issues | length > 0
+    - aap_fail_on_degraded_pods | bool

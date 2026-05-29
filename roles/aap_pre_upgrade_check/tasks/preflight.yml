@@ -1,0 +1,49 @@
+---
+- name: Set kubeconfig environment variable
+  ansible.builtin.set_fact:
+    aap_k8s_kubeconfig: "{{ aap_kubeconfig_path if aap_kubeconfig_path else omit }}"
+
+- name: Verify kubectl/oc is available
+  ansible.builtin.command: kubectl version --client -o json
+  environment:
+    KUBECONFIG: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: kubectl_version
+  changed_when: false
+  failed_when: kubectl_version.rc != 0
+
+- name: Parse kubectl version
+  ansible.builtin.set_fact:
+    kubectl_client_version: "{{ (kubectl_version.stdout | from_json).clientVersion.gitVersion }}"
+
+- name: Display kubectl version
+  ansible.builtin.debug:
+    msg: "Using kubectl client version: {{ kubectl_client_version }}"
+
+- name: Test cluster connectivity
+  kubernetes.core.k8s_cluster_info:
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: cluster_info
+
+- name: Display cluster info
+  ansible.builtin.debug:
+    msg: "Connected to cluster: {{ cluster_info.version.server.kubernetes.gitVersion }}"
+
+- name: Create report output directory
+  ansible.builtin.file:
+    path: "{{ aap_report_output_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  when: aap_generate_report | bool
+
+- name: Initialize facts dictionary
+  ansible.builtin.set_fact:
+    aap_check_results:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      cluster_version: "{{ cluster_info.version.server.kubernetes.gitVersion }}"
+      nodes: {}
+      operators: {}
+      aap_instance: {}
+      database: {}
+      issues: []
+      warnings: []

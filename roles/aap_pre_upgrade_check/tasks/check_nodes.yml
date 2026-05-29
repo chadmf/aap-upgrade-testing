@@ -1,0 +1,73 @@
+---
+- name: Get node information
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: node_info
+
+- name: Get node metrics
+  ansible.builtin.command: kubectl top nodes --no-headers
+  environment:
+    KUBECONFIG: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: node_metrics_raw
+  changed_when: false
+  failed_when: false
+
+- name: Parse node metrics
+  ansible.builtin.set_fact:
+    node_metrics: "{{ node_metrics | default({}) | combine({item.split()[0]: {'cpu': item.split()[1], 'cpu_percent': item.split()[2] | regex_replace('%', '') | int, 'memory': item.split()[3], 'memory_percent': item.split()[4] | regex_replace('%', '') | int}}) }}"
+  loop: "{{ node_metrics_raw.stdout_lines }}"
+  when: node_metrics_raw.rc == 0
+
+- name: Analyze node health
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'nodes': node_analysis}, recursive=true) }}"
+  vars:
+    node_analysis: |
+      {%- set nodes = {} -%}
+      {%- for node in node_info.resources -%}
+        {%- set node_name = node.metadata.name -%}
+        {%- set conditions = {} -%}
+        {%- for condition in node.status.conditions -%}
+          {%- set _ = conditions.update({condition.type: condition.status}) -%}
+        {%- endfor -%}
+        {%- set metrics = node_metrics[node_name] | default({}) -%}
+        {%- set _ = nodes.update({
+          node_name: {
+            'status': conditions.get('Ready', 'Unknown'),
+            'roles': node.metadata.labels.get('node-role.kubernetes.io/master', '') | ternary(['master'], []) + node.metadata.labels.get('node-role.kubernetes.io/worker', '') | ternary(['worker'], []) + node.metadata.labels.get('node-role.kubernetes.io/control-plane', '') | ternary(['control-plane'], []),
+            'version': node.status.nodeInfo.kubeletVersion,
+            'os_image': node.status.nodeInfo.osImage,
+            'kernel': node.status.nodeInfo.kernelVersion,
+            'container_runtime': node.status.nodeInfo.containerRuntimeVersion,
+            'internal_ip': (node.status.addresses | selectattr('type', 'equalto', 'InternalIP') | map(attribute='address') | list | first) | default(''),
+            'cpu_usage': metrics.get('cpu', 'N/A'),
+            'cpu_percent': metrics.get('cpu_percent', 0),
+            'memory_usage': metrics.get('memory', 'N/A'),
+            'memory_percent': metrics.get('memory_percent', 0),
+            'conditions': conditions
+          }
+        }) -%}
+      {%- endfor -%}
+      {{ nodes }}
+
+- name: Check for node issues
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'issues': aap_check_results.issues + [issue_msg]}, recursive=true) }}"
+  loop: "{{ aap_check_results.nodes | dict2items }}"
+  when: item.value.status != 'True'
+  vars:
+    issue_msg: "Node {{ item.key }} is not Ready (status: {{ item.value.status }})"
+
+- name: Check for resource warnings
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+  loop: "{{ aap_check_results.nodes | dict2items }}"
+  when: item.value.cpu_percent > aap_node_cpu_warning_threshold or item.value.memory_percent > aap_node_memory_warning_threshold
+  vars:
+    warning_msg: "Node {{ item.key }} high resource usage (CPU: {{ item.value.cpu_percent }}%, Memory: {{ item.value.memory_percent }}%)"
+
+- name: Display node status summary
+  ansible.builtin.debug:
+    msg: "Checked {{ aap_check_results.nodes | length }} node(s)"

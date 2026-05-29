@@ -1,0 +1,64 @@
+---
+- name: Get AnsibleAutomationPlatform custom resource
+  kubernetes.core.k8s_info:
+    api_version: aap.ansible.com/v1alpha1
+    kind: AnsibleAutomationPlatform
+    namespace: "{{ aap_namespace }}"
+    kubeconfig: "{{ aap_k8s_kubeconfig | default(omit) }}"
+  register: aap_cr_info
+
+- name: Analyze AAP instance
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'aap_instance': aap_analysis}, recursive=true) }}"
+  vars:
+    aap_analysis: |
+      {%- set instances = {} -%}
+      {%- for instance in aap_cr_info.resources -%}
+        {%- set status = instance.status | default({}) -%}
+        {%- set conditions = status.get('conditions', []) -%}
+        {%- set running_condition = conditions | selectattr('type', 'equalto', 'Running') | first | default({}) -%}
+        {%- set successful_condition = conditions | selectattr('type', 'equalto', 'Successful') | first | default({}) -%}
+        {%- set failure_condition = conditions | selectattr('type', 'equalto', 'Failure') | first | default({}) -%}
+        {%- set ansible_result = running_condition.get('ansibleResult', {}) -%}
+        {%- set _ = instances.update({
+          instance.metadata.name: {
+            'age': instance.metadata.creationTimestamp,
+            'version': status.get('version', 'Unknown'),
+            'url': status.get('URL', ''),
+            'admin_user': status.get('adminUser', ''),
+            'running_status': running_condition.get('status', 'Unknown'),
+            'running_message': running_condition.get('message', ''),
+            'successful_status': successful_condition.get('status', 'Unknown'),
+            'successful_message': successful_condition.get('message', ''),
+            'failure_status': failure_condition.get('status', 'Unknown'),
+            'last_reconciliation': running_condition.get('ansibleResult', {}).get('completion', ''),
+            'ansible_changed': ansible_result.get('changed', 0),
+            'ansible_ok': ansible_result.get('ok', 0),
+            'ansible_failures': ansible_result.get('failures', 0),
+            'ansible_skipped': ansible_result.get('skipped', 0),
+            'controller': status.get('controller', ''),
+            'image': status.get('image', '')
+          }
+        }) -%}
+      {%- endfor -%}
+      {{ instances }}
+
+- name: Check for AAP instance issues
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'issues': aap_check_results.issues + [issue_msg]}, recursive=true) }}"
+  loop: "{{ aap_check_results.aap_instance | dict2items }}"
+  when: item.value.successful_status != 'True' or item.value.failure_status == 'True'
+  vars:
+    issue_msg: "AAP instance {{ item.key }} unhealthy - Success: {{ item.value.successful_status }}, Failure: {{ item.value.failure_status }}, Message: {{ item.value.successful_message }}"
+
+- name: Check for Ansible reconciliation failures
+  ansible.builtin.set_fact:
+    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+  loop: "{{ aap_check_results.aap_instance | dict2items }}"
+  when: item.value.ansible_failures | int > 0
+  vars:
+    warning_msg: "AAP instance {{ item.key }} has {{ item.value.ansible_failures }} Ansible task failure(s) in last reconciliation"
+
+- name: Display AAP instance summary
+  ansible.builtin.debug:
+    msg: "Found {{ aap_check_results.aap_instance | length }} AAP instance(s)"

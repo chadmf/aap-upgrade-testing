@@ -1,0 +1,37 @@
+---
+# Kubeconfig file path (leave empty to use default ~/.kube/config)
+aap_kubeconfig_path: ""
+
+# AAP namespace
+aap_namespace: ansible-automation-platform
+
+# Database namespace (for external postgres)
+aap_database_namespace: edb-pg-demo
+
+# Report output settings
+aap_report_output_dir: "{{ playbook_dir }}/reports"
+aap_report_filename: "pre-upgrade-check-{{ ansible_date_time.iso8601_basic_short }}.md"
+aap_generate_report: true
+
+# Resource thresholds for warnings
+aap_node_cpu_warning_threshold: 70
+aap_node_memory_warning_threshold: 80
+
+# Operator health check settings
+aap_operator_check_timeout: 30
+aap_pod_ready_timeout: 60
+
+# Expected AAP operators
+aap_expected_operators:
+  - aap-gateway-operator-controller-manager
+  - ansible-lightspeed-operator-controller-manager
+  - automation-controller-operator-controller-manager
+  - automation-hub-operator-controller-manager
+  - automationmetricsservice-operator-controller-manager
+  - eda-server-operator-controller-manager
+  - resource-operator-controller-manager
+
+# Fail on issues or just warn
+aap_fail_on_degraded_pods: false
+aap_fail_on_failed_csv: true
+aap_fail_on_unhealthy_database: true

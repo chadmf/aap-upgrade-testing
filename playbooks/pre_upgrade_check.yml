@@ -1,0 +1,29 @@
+---
+- name: AAP Pre-Upgrade Health Check
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    # Override these as needed:
+    # aap_kubeconfig_path: ~/.kube/kubeconfig-noingress
+    # aap_namespace: ansible-automation-platform
+    # aap_database_namespace: edb-pg-demo
+    # aap_node_cpu_warning_threshold: 70
+    # aap_node_memory_warning_threshold: 80
+
+  roles:
+    - aap_pre_upgrade_check
+
+  post_tasks:
+    - name: Display final status
+      ansible.builtin.debug:
+        msg:
+          - "========================================="
+          - "AAP Pre-Upgrade Health Check Complete"
+          - "========================================="
+          - "Total Issues: {{ aap_check_results.issues | length }}"
+          - "Total Warnings: {{ aap_check_results.warnings | length }}"
+          - ""
+          - "{% if aap_check_results.issues | length == 0 %}✓ No critical issues - cluster appears ready for upgrade{% else %}❌ Critical issues found - review before upgrading{% endif %}"
+          - "{% if aap_check_results.warnings | length > 0 %}⚠️  {{ aap_check_results.warnings | length }} warning(s) - review recommended{% endif %}"
+          - "========================================="
