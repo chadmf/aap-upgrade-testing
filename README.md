@@ -5,6 +5,7 @@ Ansible automation for validating AAP deployments on OpenShift before and during
 ## Overview
 
 This repository contains Ansible roles and playbooks for:
+
 - Pre-upgrade health checks of AAP on OpenShift
 - Node health and resource utilization validation
 - Operator status verification
@@ -227,7 +228,6 @@ reports/chadsno2026-pre-upgrade-20260529T123456.md
 
 5. **Proceed with upgrade when all checks pass**
 
-
 ## Common Scenarios
 
 ### Strict Pre-Upgrade Check
@@ -270,6 +270,7 @@ ansible-galaxy collection install kubernetes.core
 ### Permission errors
 
 Ensure your kubeconfig has read access to:
+
 - Nodes
 - Pods, CSVs in AAP namespace
 - Resources in database namespace
@@ -296,7 +297,6 @@ For the chadsno2026 cluster specifically:
 - **Database Cluster**: `demo-pg` (cloud-native-postgresql)
 
 Use the dedicated playbook:
-
 
 ```bash
 ansible-playbook playbooks/check_chadsno2026.yml

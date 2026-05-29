@@ -1,10 +1,12 @@
 # AAP Pre-Upgrade Check Role
 
-An Ansible role that performs comprehensive health checks on Ansible Automation Platform (AAP) deployments on OpenShift before upgrades.
+An Ansible role that performs comprehensive health checks on Ansible Automation
+Platform (AAP) deployments on OpenShift before upgrades.
 
 ## Description
 
 This role validates the health and readiness of your AAP deployment by checking:
+
 - OpenShift node health and resource utilization
 - AAP operator status and ClusterServiceVersions (CSVs)
 - AAP instance reconciliation status
@@ -212,6 +214,7 @@ aap_check_results:
 ### kubernetes.core collection not found
 
 Install the collection:
+
 ```bash
 ansible-galaxy collection install kubernetes.core
 ```
@@ -219,6 +222,7 @@ ansible-galaxy collection install kubernetes.core
 ### Permission denied errors
 
 Ensure your kubeconfig has proper RBAC permissions:
+
 - Read access to nodes
 - Read access to pods, CSVs in AAP namespace
 - Read access to database namespace resources
@@ -226,6 +230,7 @@ Ensure your kubeconfig has proper RBAC permissions:
 ### Metrics not available
 
 If node metrics fail, ensure metrics-server is installed:
+
 ```bash
 kubectl top nodes
 ```

@@ -63,6 +63,7 @@ violations |
 - Rotate credentials regularly
 
 **Usage with this role:**
+
 ```yaml
 # Pass kubeconfig path explicitly
 - hosts: localhost
@@ -82,6 +83,7 @@ violations |
 - Review report contents before sharing
 
 **Recommended permissions:**
+
 ```bash
 # Create reports directory with restricted access
 mkdir -p ~/aap-reports
@@ -152,6 +154,7 @@ rules:
 ```
 
 **Do NOT grant:**
+
 - Cluster-admin access
 - Write permissions (create, update, delete, patch)
 - Access to namespaces not required for AAP
@@ -162,6 +165,7 @@ rules:
 secrets.**
 
 **Security measures implemented:**
+
 - Secrets only read, never modified
 - Base64 decoding happens in-memory
 - Credentials not written to disk (except in kubeconfig which already
@@ -169,6 +173,7 @@ exists)
 - Facts containing credentials cleared after use
 
 **User responsibilities:**
+
 - Ensure kubeconfig has appropriate permissions
 - Review Ansible output for any unexpected credential exposure
 - Rotate credentials if exposure suspected
@@ -227,6 +232,7 @@ exists)
 ### Hardening Recommendations
 
 1. **Restrict playbook execution:**
+
    ```bash
    # Run from bastion host only
    # Use Ansible Vault for any sensitive variables
@@ -234,6 +240,7 @@ exists)
    ```
 
 2. **Network security:**
+
    ```bash
    # Ensure Kubernetes API access is over TLS
    # Verify certificate validation enabled
@@ -241,6 +248,7 @@ exists)
    ```
 
 3. **Monitoring:**
+
    ```bash
    # Enable audit logging on Kubernetes cluster
    # Monitor for unusual API access patterns
@@ -270,14 +278,15 @@ Detailed findings tracked in `.github/SECURITY_REVIEW.md`
 ## Contact
 
 For security concerns or questions:
+
 - **Security Email:** security@example.com
 - **GitHub Issues:** For non-sensitive questions only
 
 ## References
 
 - [OWASP Ansible Security]
-(https://cheatsheetseries.owasp.org/cheatsheets/Ansible_Security_Cheat_Sheet.html)
+  <https://cheatsheetseries.owasp.org/cheatsheets/Ansible_Security_Cheat_Sheet.html>
 - [Kubernetes Security Best Practices]
-(https://kubernetes.io/docs/concepts/security/security-checklist/)
+  <https://kubernetes.io/docs/concepts/security/security-checklist/>
 - [Ansible Vault Documentation]
-(https://docs.ansible.com/ansible/latest/user_guide/vault.html)
+  <https://docs.ansible.com/ansible/latest/user_guide/vault.html>
