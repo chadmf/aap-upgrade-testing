@@ -117,7 +117,6 @@ docker run --rm -it \
 ├── run-in-ee.sh                         # Helper script for container execution
 ├── playbooks/
 │   ├── pre_upgrade_check.yml            # Generic pre-upgrade check
-│   ├── check_chadsno2026.yml            # Example: chadsno2026 cluster
 │   └── check_aap_lab.yml                # Example: aap-lab cluster
 ├── roles/
 │   └── aap_pre_upgrade_check/           # Main health check role
@@ -170,11 +169,6 @@ Create cluster-specific playbooks by copying `pre_upgrade_check.yml` and setting
   roles:
     - aap_pre_upgrade_check
 ```
-
-Examples in this repo:
-
-- `check_chadsno2026.yml` - chadsno2026 cluster configuration
-- `check_aap_lab.yml` - aap-lab cluster configuration
 
 ## Role: aap_pre_upgrade_check
 

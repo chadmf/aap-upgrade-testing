@@ -167,7 +167,7 @@ ansible-playbook playbooks/pre_upgrade_check.yml --skip-tags report
 
 # Use custom kubeconfig
 ansible-playbook playbooks/pre_upgrade_check.yml \
-  -e aap_kubeconfig_path=~/.kube/kubeconfig-chadsno2026
+  -e aap_kubeconfig_path=~/.kube/kubeconfig
 
 # Lower thresholds for warnings
 ansible-playbook playbooks/pre_upgrade_check.yml \
