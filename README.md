@@ -12,49 +12,113 @@ This repository contains Ansible roles and playbooks for:
 - Database backend health checks
 - Automated report generation
 
+**Runs in the same execution environment (container) that AAP uses** for maximum compatibility.
+
 ## Quick Start
 
 ### Prerequisites
 
+**Container Engine** (Podman or Docker):
+
 ```bash
-# Install required Ansible collection
-ansible-galaxy collection install kubernetes.core
+# macOS - Install Podman
+brew install podman
 
-# Verify kubectl/oc is available
+# Initialize and start Podman machine (macOS only)
+podman machine init
+podman machine start
+
+# Pull execution environment image
+podman pull quay.io/ansible/creator-ee:latest
+
+# Verify
+podman run --rm quay.io/ansible/creator-ee:latest ansible --version
+```
+
+**Cluster Access**:
+
+```bash
+# Verify kubectl/oc is available and configured
 kubectl version --client
-
-# Verify cluster connectivity
 kubectl cluster-info
 ```
 
 ### Run Pre-Upgrade Check
 
-For the **chadsno2026** cluster:
+#### Using Helper Script (Recommended)
+
+Basic execution:
 
 ```bash
-ansible-playbook playbooks/check_chadsno2026.yml
+./run-in-ee.sh playbooks/pre_upgrade_check.yml
 ```
 
-For other clusters:
+With options:
 
 ```bash
-# Using default kubeconfig
-ansible-playbook playbooks/pre_upgrade_check.yml
+# With tags
+./run-in-ee.sh playbooks/pre_upgrade_check.yml --tags operators,database
 
-# Using custom kubeconfig
-ansible-playbook playbooks/pre_upgrade_check.yml \
-  -e aap_kubeconfig_path=~/.kube/custom-config
+# Check mode (dry run)
+./run-in-ee.sh playbooks/pre_upgrade_check.yml --check
+
+# With extra variables
+./run-in-ee.sh playbooks/pre_upgrade_check.yml \
+  -e aap_namespace=my-namespace \
+  -e aap_kubeconfig_path=~/.kube/config \
+  -e aap_node_cpu_warning_threshold=50
 ```
+
+#### Using Podman/Docker Directly
+
+```bash
+podman run --rm -it \
+  -v ~/.kube:/runner/.kube:Z \
+  -v $(pwd):/runner/project:Z \
+  -v $(pwd)/reports:/runner/project/reports:Z,rw \
+  -e KUBECONFIG=/runner/.kube/kubeconfig-noingress \
+  -e ANSIBLE_STDOUT_CALLBACK=default \
+  -w /runner/project \
+  quay.io/ansible/creator-ee:latest \
+  ansible-playbook playbooks/pre_upgrade_check.yml
+```
+
+**For Docker**, remove the `:Z` labels:
+
+```bash
+docker run --rm -it \
+  -v ~/.kube:/runner/.kube \
+  -v $(pwd):/runner/project \
+  -v $(pwd)/reports:/runner/project/reports \
+  -e KUBECONFIG=/runner/.kube/kubeconfig-noingress \
+  -e ANSIBLE_STDOUT_CALLBACK=default \
+  -w /runner/project \
+  quay.io/ansible/creator-ee:latest \
+  ansible-playbook playbooks/pre_upgrade_check.yml
+```
+
+## Why Use Containers?
+
+| Benefit | Description |
+|---------|-------------|
+| **AAP Compatibility** | Same runtime environment as AAP uses |
+| **Reproducibility** | Identical execution across all systems |
+| **Dependency Isolation** | No local Python/collection conflicts |
+| **Version Consistency** | Fixed Ansible and collection versions |
+| **No Setup Required** | Everything bundled in the container |
 
 ## Repository Structure
 
 ```text
 .
+├── ansible-navigator.yml                 # Navigator config (optional)
 ├── ansible.cfg                           # Ansible configuration
 ├── inventory                             # Inventory file (localhost)
+├── run-in-ee.sh                         # Helper script for container execution
 ├── playbooks/
 │   ├── pre_upgrade_check.yml            # Generic pre-upgrade check
-│   └── check_chadsno2026.yml            # chadsno2026-specific check
+│   ├── check_chadsno2026.yml            # Example: chadsno2026 cluster
+│   └── check_aap_lab.yml                # Example: aap-lab cluster
 ├── roles/
 │   └── aap_pre_upgrade_check/           # Main health check role
 │       ├── defaults/main.yml            # Default variables
@@ -71,8 +135,7 @@ ansible-playbook playbooks/pre_upgrade_check.yml \
 │       │   └── pre_upgrade_report.md.j2 # Report template
 │       └── README.md                    # Role documentation
 ├── reports/                             # Generated reports (created on first run)
-├── chadsno2026-status-report.md        # Manual investigation report
-└── README.md                            # This file
+└── docs/                                # Documentation
 ```
 
 ## Playbooks
@@ -82,15 +145,35 @@ ansible-playbook playbooks/pre_upgrade_check.yml \
 Generic playbook for any AAP deployment. Override variables as needed:
 
 ```bash
-ansible-playbook playbooks/pre_upgrade_check.yml \
+./run-in-ee.sh playbooks/pre_upgrade_check.yml \
   -e aap_kubeconfig_path=~/.kube/config \
   -e aap_namespace=ansible-automation-platform \
   -e aap_database_namespace=edb-pg-demo
 ```
 
-### `playbooks/check_chadsno2026.yml`
+### Cluster-Specific Playbooks
 
-Pre-configured for the chadsno2026 cluster with proper kubeconfig and namespace settings.
+Create cluster-specific playbooks by copying `pre_upgrade_check.yml` and setting variables:
+
+```yaml
+---
+- name: Check AAP Deployment
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    aap_kubeconfig_path: ~/.kube/my-cluster-config
+    aap_namespace: ansible-automation-platform
+    aap_database_namespace: postgres-operator
+    aap_report_filename: "my-cluster-pre-upgrade-{{ ansible_date_time.iso8601_basic_short }}.md"
+
+  roles:
+    - aap_pre_upgrade_check
+```
+
+Examples in this repo:
+- `check_chadsno2026.yml` - chadsno2026 cluster configuration
+- `check_aap_lab.yml` - aap-lab cluster configuration
 
 ## Role: aap_pre_upgrade_check
 
@@ -163,16 +246,16 @@ Run specific checks:
 
 ```bash
 # Only check nodes
-ansible-playbook playbooks/pre_upgrade_check.yml --tags nodes
+./run-in-ee.sh playbooks/pre_upgrade_check.yml --tags nodes
 
 # Only check operators
-ansible-playbook playbooks/pre_upgrade_check.yml --tags operators
+./run-in-ee.sh playbooks/pre_upgrade_check.yml --tags operators
 
 # Check nodes and database
-ansible-playbook playbooks/pre_upgrade_check.yml --tags nodes,database
+./run-in-ee.sh playbooks/pre_upgrade_check.yml --tags nodes,database
 
 # Skip report generation
-ansible-playbook playbooks/pre_upgrade_check.yml --skip-tags report
+./run-in-ee.sh playbooks/pre_upgrade_check.yml --skip-tags report
 ```
 
 Available tags:
@@ -190,7 +273,7 @@ Reports are generated in `reports/` with timestamp:
 
 ```text
 reports/pre-upgrade-check-20260529T123456.md
-reports/chadsno2026-pre-upgrade-20260529T123456.md
+reports/my-cluster-pre-upgrade-20260529T123456.md
 ```
 
 ### Report Contents
@@ -209,13 +292,13 @@ reports/chadsno2026-pre-upgrade-20260529T123456.md
 1. **Pre-upgrade validation**:
 
    ```bash
-   ansible-playbook playbooks/check_chadsno2026.yml
+   ./run-in-ee.sh playbooks/pre_upgrade_check.yml
    ```
 
 2. **Review the report**:
 
    ```bash
-   cat reports/chadsno2026-pre-upgrade-*.md
+   cat reports/pre-upgrade-check-*.md
    ```
 
 3. **Address any issues found**
@@ -223,7 +306,7 @@ reports/chadsno2026-pre-upgrade-20260529T123456.md
 4. **Re-run validation**:
 
    ```bash
-   ansible-playbook playbooks/check_chadsno2026.yml
+   ./run-in-ee.sh playbooks/pre_upgrade_check.yml
    ```
 
 5. **Proceed with upgrade when all checks pass**
@@ -235,7 +318,7 @@ reports/chadsno2026-pre-upgrade-20260529T123456.md
 Lower thresholds and fail on any degraded pods:
 
 ```bash
-ansible-playbook playbooks/pre_upgrade_check.yml \
+./run-in-ee.sh playbooks/pre_upgrade_check.yml \
   -e aap_node_cpu_warning_threshold=50 \
   -e aap_node_memory_warning_threshold=60 \
   -e aap_fail_on_degraded_pods=true
@@ -246,67 +329,224 @@ ansible-playbook playbooks/pre_upgrade_check.yml \
 Skip node and database checks:
 
 ```bash
-ansible-playbook playbooks/pre_upgrade_check.yml \
+./run-in-ee.sh playbooks/pre_upgrade_check.yml \
   --tags operators,aap
 ```
 
-### Generate Report Only
-
-If you've already run checks and just want to regenerate the report:
+### Syntax Check Before Running
 
 ```bash
-ansible-playbook playbooks/pre_upgrade_check.yml \
-  --tags report
+./run-in-ee.sh playbooks/pre_upgrade_check.yml --syntax-check
 ```
+
+### Dry Run (Check Mode)
+
+```bash
+./run-in-ee.sh playbooks/pre_upgrade_check.yml --check
+```
+
+## Execution Environment Details
+
+The container includes:
+
+- **Image**: `quay.io/ansible/creator-ee:latest`
+- **Ansible**: 2.16.3
+- **Python**: 3.12.1
+- **Collections**:
+  - kubernetes.core 3.1.0
+  - ansible.posix
+  - community.general
+  - And many others
+
+Verify what's in the container:
+
+```bash
+# Check Ansible version
+podman run --rm quay.io/ansible/creator-ee:latest ansible --version
+
+# List collections
+podman run --rm quay.io/ansible/creator-ee:latest \
+  ansible-galaxy collection list
+
+# Check kubernetes.core specifically
+podman run --rm quay.io/ansible/creator-ee:latest \
+  ansible-galaxy collection list | grep kubernetes.core
+```
+
+## Volume Mounts Explained
+
+| Host Path | Container Path | Purpose | Options |
+|-----------|---------------|---------|---------|
+| `~/.kube` | `/runner/.kube` | Kubeconfig access | `:Z` (Podman/SELinux) |
+| `$(pwd)` | `/runner/project` | Project files (playbooks, roles) | `:Z` |
+| `$(pwd)/reports` | `/runner/project/reports` | Report output | `:Z,rw` (read-write) |
+
+**SELinux Labels (`:Z`)** - Required for Podman:
+- `:Z` = private unshared label
+- `:z` = shared label
+- `,rw` = read-write (default is read-only)
+
+**Docker** doesn't need `:Z` labels - omit them when using Docker.
 
 ## Troubleshooting
 
-### kubernetes.core collection not found
+### Reports Not Generated
+
+Ensure the reports directory exists:
 
 ```bash
+mkdir -p reports
+```
+
+The helper script creates it automatically.
+
+### Kubeconfig Not Found
+
+Verify the kubeconfig path in the container:
+
+```bash
+podman run --rm -it \
+  -v ~/.kube:/runner/.kube:Z \
+  -e KUBECONFIG=/runner/.kube/kubeconfig \
+  quay.io/ansible/creator-ee:latest \
+  ls -la /runner/.kube
+```
+
+Override the kubeconfig path by editing `run-in-ee.sh` and changing `KUBECONFIG_PATH`, or set it as an environment variable:
+
+```bash
+KUBECONFIG_PATH=/runner/.kube/kubeconfig \
+  ./run-in-ee.sh playbooks/pre_upgrade_check.yml
+```
+
+### Permission Denied on Volume Mounts
+
+Add `:Z` for Podman (SELinux labeling):
+
+```bash
+-v ~/.kube:/runner/.kube:Z
+```
+
+For Docker, omit `:Z`:
+
+```bash
+-v ~/.kube:/runner/.kube
+```
+
+### Container Engine Not Running
+
+```bash
+# Podman (macOS)
+podman machine start
+
+# Docker
+# Start Docker Desktop
+```
+
+### kubernetes.core Collection Not Found
+
+The `creator-ee` image includes this collection. Verify:
+
+```bash
+podman run --rm quay.io/ansible/creator-ee:latest \
+  ansible-galaxy collection list | grep kubernetes.core
+```
+
+Expected output:
+```
+kubernetes.core               3.1.0
+```
+
+## Alternative: Local Ansible (Not Recommended)
+
+If you must run locally without containers:
+
+```bash
+# Install Ansible and collections
+pip install ansible
 ansible-galaxy collection install kubernetes.core
+
+# Run playbook
+ansible-playbook playbooks/pre_upgrade_check.yml
 ```
 
-### Permission errors
+**Note**: Local execution may have different behavior than AAP due to different Python versions, collection versions, and dependencies.
 
-Ensure your kubeconfig has read access to:
+## Helper Script Reference
 
-- Nodes
-- Pods, CSVs in AAP namespace
-- Resources in database namespace
-
-### No metrics available
-
-Ensure metrics-server is running:
+The `run-in-ee.sh` script accepts:
 
 ```bash
-kubectl top nodes
+./run-in-ee.sh [playbook] [ansible-playbook-options]
 ```
 
-If metrics are unavailable, the role continues but metrics fields show
-"N/A".
-
-## chadsno2026 Cluster
-
-For the chadsno2026 cluster specifically:
-
-- **Kubeconfig**: `~/.kube/kubeconfig-noingress`
-- **Context**: `admin`
-- **AAP Namespace**: `ansible-automation-platform`
-- **Database Namespace**: `edb-pg-demo`
-- **Database Cluster**: `demo-pg` (cloud-native-postgresql)
-
-Use the dedicated playbook:
+Environment variables you can set:
 
 ```bash
-ansible-playbook playbooks/check_chadsno2026.yml
+# Use different execution environment image
+EE_IMAGE=registry.redhat.io/ansible-automation-platform-25/ee-supported-rhel9:latest \
+  ./run-in-ee.sh playbooks/pre_upgrade_check.yml
+
+# Use different kubeconfig path in container
+KUBECONFIG_PATH=/runner/.kube/my-config \
+  ./run-in-ee.sh playbooks/pre_upgrade_check.yml
+
+# Use docker instead of podman
+CONTAINER_ENGINE=docker \
+  ./run-in-ee.sh playbooks/pre_upgrade_check.yml
 ```
 
-## Manual Investigation
+## Interactive Container Shell
 
-See [chadsno2026-status-report.md](chadsno2026-status-report.md) for a
-detailed manual investigation report of the chadsno2026 cluster from
-2026-05-29.
+For debugging or exploration:
+
+```bash
+podman run --rm -it \
+  -v ~/.kube:/runner/.kube:Z \
+  -v $(pwd):/runner/project:Z \
+  -e KUBECONFIG=/runner/.kube/kubeconfig \
+  -w /runner/project \
+  quay.io/ansible/creator-ee:latest \
+  /bin/bash
+```
+
+Inside the container:
+
+```bash
+# Check mounted volumes
+ls -la /runner/.kube
+ls -la /runner/project
+
+# Test kubectl
+kubectl version --client
+kubectl cluster-info
+
+# Run playbook manually
+ansible-playbook playbooks/pre_upgrade_check.yml --syntax-check
+ansible-playbook playbooks/pre_upgrade_check.yml --check
+```
+
+## Documentation
+
+- [Role Documentation](roles/aap_pre_upgrade_check/README.md) - Detailed role documentation
+- [Contributing](CONTRIBUTING.md) - Development workflow and guidelines
+- [Security](SECURITY.md) - Security policy and vulnerability reporting
+- [Test Results](TEST-RESULTS.md) - Validation test results
+- [Container Execution Tests](docs/TEST-CONTAINER-EXECUTION.md) - Container test validation
+
+## Tested and Verified
+
+✅ All container execution tests passing (2026-05-29):
+- Syntax validation in container
+- Check mode (dry-run) execution
+- Ansible 2.16.3 with Python 3.12 in container
+- kubernetes.core collection v3.1.0 available
+- Volume mounts working (kubeconfig, project files, reports)
+- Helper script functionality
+- Direct podman/docker commands
+- Multiple playbooks
+
+See [docs/TEST-CONTAINER-EXECUTION.md](docs/TEST-CONTAINER-EXECUTION.md) for detailed test results.
 
 ## License
 

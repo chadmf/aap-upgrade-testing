@@ -1,0 +1,56 @@
+---
+# ansible-navigator configuration
+# See: https://ansible.readthedocs.io/projects/navigator/settings/
+
+ansible-navigator:
+  # Execution environment settings
+  execution-environment:
+    # Use an execution environment (container)
+    enabled: true
+
+    # Container image to use
+    # Default: Latest AAP supported EE with kubernetes.core
+    image: quay.io/ansible/creator-ee:latest
+
+    # Pull policy: always, missing, never, tag
+    pull:
+      policy: missing
+
+    # Container engine: auto, podman, docker
+    container-engine: auto
+
+    # Volume mounts for kubeconfig access
+    volume-mounts:
+      # Mount host kubeconfig directory read-only
+      - src: "~/.kube"
+        dest: "/runner/.kube"
+
+    # Environment variables to pass to container
+    environment-variables:
+      set:
+        # Set KUBECONFIG for the container
+        KUBECONFIG: "/runner/.kube/kubeconfig-noingress"
+
+  # Logging
+  logging:
+    level: warning
+    append: true
+    file: ./ansible-navigator.log
+
+  # Mode: stdout (like ansible-playbook) or interactive (TUI)
+  mode: stdout
+
+  # Color output
+  color:
+    enable: true
+
+  # Editor for interactive mode
+  editor:
+    command: vim
+
+  # Ansible configuration
+  ansible:
+    # Inventory file
+    inventory:
+      entries:
+        - ./inventory
