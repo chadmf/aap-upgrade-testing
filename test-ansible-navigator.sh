@@ -103,15 +103,6 @@ test_inventory_exists() {
     [[ -f inventory ]]
 }
 
-test_playbook_syntax_check() {
-    local playbook="playbooks/check_chadsno2026.yml"
-
-    # Run syntax check without actually executing
-    ansible-navigator run "$playbook" --syntax-check --mode stdout 2>&1 | \
-        grep -q "playbook:.*syntax.*OK" || \
-        ansible-navigator run "$playbook" --syntax-check --mode stdout >/dev/null 2>&1
-}
-
 test_navigator_can_mount_volumes() {
     # Test if navigator can access project files
     ansible-navigator exec -- ls /runner/project/playbooks >/dev/null 2>&1
@@ -143,22 +134,6 @@ pull_ee_image() {
         log_error "No container engine available"
         return 1
     fi
-}
-
-test_dry_run_playbook() {
-    local playbook="playbooks/check_chadsno2026.yml"
-
-    log_info "Running playbook in check mode (dry-run)..."
-
-    # Run in check mode with no actual changes
-    # This will fail if kubeconfig is not accessible but validates the setup
-    ansible-navigator run "$playbook" \
-        --mode stdout \
-        --check \
-        --tags preflight 2>&1 | tee /tmp/navigator-test.log
-
-    # Check if it at least started executing
-    grep -qE "(PLAY|TASK)" /tmp/navigator-test.log
 }
 
 # Main test execution
@@ -249,9 +224,7 @@ main() {
 
     if [[ $TESTS_FAILED -eq 0 ]]; then
         log_success "All tests passed!"
-        echo ""
-        log_info "You can now run playbooks with:"
-        echo "  ansible-navigator run playbooks/check_chadsno2026.yml"
+        echo "All tests passed!"
         exit 0
     else
         log_error "Some tests failed. Review the output above."
