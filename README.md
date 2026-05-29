@@ -472,16 +472,47 @@ ansible-playbook playbooks/pre_upgrade_check.yml
 
 **Note**: Local execution may have different behavior than AAP due to different Python versions, collection versions, and dependencies.
 
+<<<<<<< HEAD
 ## Helper Script Reference
+=======
+Ensure your kubeconfig has read access to:
+
+- Nodes
+- Pods, CSVs in AAP namespace
+- Resources in database namespace
+>>>>>>> origin/main
 
 The `run-in-ee.sh` script accepts:
 
+<<<<<<< HEAD
+=======
+Ensure metrics-server is running:
+
+>>>>>>> origin/main
 ```bash
 ./run-in-ee.sh [playbook] [ansible-playbook-options]
 ```
 
+<<<<<<< HEAD
 Environment variables you can set:
 
+=======
+If metrics are unavailable, the role continues but metrics fields show
+"N/A".
+
+## chadsno2026 Cluster
+
+For the chadsno2026 cluster specifically:
+
+- **Kubeconfig**: `~/.kube/kubeconfig-noingress`
+- **Context**: `admin`
+- **AAP Namespace**: `ansible-automation-platform`
+- **Database Namespace**: `edb-pg-demo`
+- **Database Cluster**: `demo-pg` (cloud-native-postgresql)
+
+Use the dedicated playbook:
+
+>>>>>>> origin/main
 ```bash
 # Use different execution environment image
 EE_IMAGE=registry.redhat.io/ansible-automation-platform-25/ee-supported-rhel9:latest \
@@ -498,6 +529,7 @@ CONTAINER_ENGINE=docker \
 
 ## Interactive Container Shell
 
+<<<<<<< HEAD
 For debugging or exploration:
 
 ```bash
@@ -547,6 +579,11 @@ ansible-playbook playbooks/pre_upgrade_check.yml --check
 - Multiple playbooks
 
 See [docs/TEST-CONTAINER-EXECUTION.md](docs/TEST-CONTAINER-EXECUTION.md) for detailed test results.
+=======
+See [chadsno2026-status-report.md](chadsno2026-status-report.md) for a
+detailed manual investigation report of the chadsno2026 cluster from
+2026-05-29.
+>>>>>>> origin/main
 
 ## License
 
