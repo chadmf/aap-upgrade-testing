@@ -41,23 +41,27 @@ You'll be assigned to PRs based on:
 ### 1. Initial Triage (2 minutes)
 
 **Check:**
+
 - [ ] PR description is clear
 - [ ] CI checks are passing (or running)
 - [ ] PR size is reasonable (<500 lines changed)
 - [ ] Branch is up to date with main
 
 **If Not Ready:**
+
 - Comment: "Please ensure CI passes and branch is up to date with main before review."
 - Set status: "Changes requested"
 
 ### 2. Understand the Change (5-10 minutes)
 
 **Read:**
+
 - PR description and linked issues
 - File diffs in GitHub
 - Related code context
 
 **Ask Yourself:**
+
 - What problem does this solve?
 - How does it solve it?
 - Does the solution make sense?
@@ -65,6 +69,7 @@ You'll be assigned to PRs based on:
 ### 3. Review Code (15-30 minutes)
 
 **Use appropriate checklist:**
+
 - **Code review:** General quality, Ansible best practices
 - **Architecture review:** `.github/ARCHITECTURE_REVIEW.md`
 - **Security review:** `.github/SECURITY_REVIEW.md`
@@ -152,6 +157,7 @@ comment for details.
   - Bad: `Check path`
 
 - [ ] **Variables** properly documented in `defaults/main.yml`
+
   ```yaml
   # Description of what this does and valid values
   variable_name: default_value

@@ -221,6 +221,7 @@ pre-commit run --all-files
 ### Security Review Triggers
 
 Changes requiring security review (automatic CODEOWNERS assignment):
+
 - Modifying `check_database.yml`
 - Changes to authentication/authorization
 - Input validation changes

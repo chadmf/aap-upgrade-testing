@@ -3,13 +3,12 @@
   hosts: localhost
   gather_facts: true
 
-  vars:
-    # Override these as needed:
-    # aap_kubeconfig_path: ~/.kube/kubeconfig-noingress
-    # aap_namespace: ansible-automation-platform
-    # aap_database_namespace: edb-pg-demo
-    # aap_node_cpu_warning_threshold: 70
-    # aap_node_memory_warning_threshold: 80
+  # Override role defaults as needed via -e flags:
+  # -e aap_kubeconfig_path=~/.kube/kubeconfig-noingress
+  # -e aap_namespace=ansible-automation-platform
+  # -e aap_database_namespace=edb-pg-demo
+  # -e aap_node_cpu_warning_threshold=70
+  # -e aap_node_memory_warning_threshold=80
 
   roles:
     - aap_pre_upgrade_check
