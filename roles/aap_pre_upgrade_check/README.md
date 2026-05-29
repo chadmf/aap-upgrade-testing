@@ -31,7 +31,8 @@ None - all variables have sensible defaults.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `aap_kubeconfig_path` | `""` | Path to kubeconfig file (empty uses default `~/.kube/config`) |
+| `aap_kubeconfig_path` | `""` | Path to kubeconfig file (empty uses
+default `~/.kube/config`) |
 | `aap_namespace` | `ansible-automation-platform` | Namespace where AAP is deployed |
 | `aap_database_namespace` | `edb-pg-demo` | Namespace for external PostgreSQL cluster |
 
@@ -39,7 +40,8 @@ None - all variables have sensible defaults.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `aap_report_output_dir` | `{{ playbook_dir }}/reports` | Directory for output reports |
+| `aap_report_output_dir` | `{{ playbook_dir }}/reports` | Directory for
+output reports |
 | `aap_report_filename` | `pre-upgrade-check-<timestamp>.md` | Report filename |
 | `aap_generate_report` | `true` | Generate markdown report |
 
@@ -48,23 +50,30 @@ None - all variables have sensible defaults.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `aap_node_cpu_warning_threshold` | `70` | CPU usage % to trigger warnings |
-| `aap_node_memory_warning_threshold` | `80` | Memory usage % to trigger warnings |
-| `aap_operator_check_timeout` | `30` | Timeout for operator checks (seconds) |
-| `aap_pod_ready_timeout` | `60` | Timeout for pod readiness checks (seconds) |
+| `aap_node_memory_warning_threshold` | `80` | Memory usage % to trigger
+warnings |
+| `aap_operator_check_timeout` | `30` | Timeout for operator checks
+(seconds) |
+| `aap_pod_ready_timeout` | `60` | Timeout for pod readiness checks
+(seconds) |
 
 #### Failure Behavior
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `aap_fail_on_degraded_pods` | `false` | Fail playbook if pods are not ready |
-| `aap_fail_on_failed_csv` | `true` | Fail playbook if CSVs are in Failed state |
-| `aap_fail_on_unhealthy_database` | `true` | Fail playbook if database cluster is unhealthy |
+| `aap_fail_on_degraded_pods` | `false` | Fail playbook if pods are not
+ready |
+| `aap_fail_on_failed_csv` | `true` | Fail playbook if CSVs are in Failed
+state |
+| `aap_fail_on_unhealthy_database` | `true` | Fail playbook if database
+cluster is unhealthy |
 
 #### Expected Operators
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `aap_expected_operators` | See `defaults/main.yml` | List of expected operator pod name patterns |
+| `aap_expected_operators` | See `defaults/main.yml` | List of expected
+operator pod name patterns |
 
 ## Dependencies
 

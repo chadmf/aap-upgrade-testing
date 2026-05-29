@@ -47,7 +47,7 @@ ansible-playbook playbooks/pre_upgrade_check.yml \
 
 ## Repository Structure
 
-```
+```text
 .
 ├── ansible.cfg                           # Ansible configuration
 ├── inventory                             # Inventory file (localhost)
@@ -80,7 +80,7 @@ ansible-playbook playbooks/pre_upgrade_check.yml \
 
 Generic playbook for any AAP deployment. Override variables as needed:
 
-```yaml
+```bash
 ansible-playbook playbooks/pre_upgrade_check.yml \
   -e aap_kubeconfig_path=~/.kube/config \
   -e aap_namespace=ansible-automation-platform \
@@ -175,6 +175,7 @@ ansible-playbook playbooks/pre_upgrade_check.yml --skip-tags report
 ```
 
 Available tags:
+
 - `preflight` - Pre-flight validation
 - `nodes` / `infrastructure` - Node health checks
 - `operators` - AAP operator checks
@@ -185,7 +186,8 @@ Available tags:
 ## Reports
 
 Reports are generated in `reports/` with timestamp:
-```
+
+```text
 reports/pre-upgrade-check-20260529T123456.md
 reports/chadsno2026-pre-upgrade-20260529T123456.md
 ```
@@ -204,11 +206,13 @@ reports/chadsno2026-pre-upgrade-20260529T123456.md
 ## Example Workflow
 
 1. **Pre-upgrade validation**:
+
    ```bash
    ansible-playbook playbooks/check_chadsno2026.yml
    ```
 
 2. **Review the report**:
+
    ```bash
    cat reports/chadsno2026-pre-upgrade-*.md
    ```
@@ -216,11 +220,13 @@ reports/chadsno2026-pre-upgrade-20260529T123456.md
 3. **Address any issues found**
 
 4. **Re-run validation**:
+
    ```bash
    ansible-playbook playbooks/check_chadsno2026.yml
    ```
 
 5. **Proceed with upgrade when all checks pass**
+
 
 ## Common Scenarios
 
@@ -271,11 +277,13 @@ Ensure your kubeconfig has read access to:
 ### No metrics available
 
 Ensure metrics-server is running:
+
 ```bash
 kubectl top nodes
 ```
 
-If metrics are unavailable, the role continues but metrics fields show "N/A".
+If metrics are unavailable, the role continues but metrics fields show
+"N/A".
 
 ## chadsno2026 Cluster
 
@@ -288,13 +296,17 @@ For the chadsno2026 cluster specifically:
 - **Database Cluster**: `demo-pg` (cloud-native-postgresql)
 
 Use the dedicated playbook:
+
+
 ```bash
 ansible-playbook playbooks/check_chadsno2026.yml
 ```
 
 ## Manual Investigation
 
-See [chadsno2026-status-report.md](chadsno2026-status-report.md) for a detailed manual investigation report of the chadsno2026 cluster from 2026-05-29.
+See [chadsno2026-status-report.md](chadsno2026-status-report.md) for a
+detailed manual investigation report of the chadsno2026 cluster from
+2026-05-29.
 
 ## License
 
