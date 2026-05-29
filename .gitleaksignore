@@ -1,0 +1,2 @@
+# Known safe patterns - these contain cluster information but not actual secrets
+chadsno2026-status-report.md:*

@@ -1,0 +1,26 @@
+# Code Owners for AAP Upgrade Testing
+#
+# This file defines who should be requested for review when files are changed.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @chadmf
+
+# Ansible role code requires architecture review
+/roles/ @chadmf
+
+# Security-sensitive files require security review
+/roles/*/tasks/check_database.yml @chadmf
+/.github/workflows/ @chadmf
+/SECURITY.md @chadmf
+
+# Documentation
+*.md @chadmf
+
+# CI/CD configurations
+/.github/ @chadmf
+
+# Quality and linting configurations
+/.ansible-lint @chadmf
+/.yamllint.yml @chadmf
+/.pre-commit-config.yaml @chadmf

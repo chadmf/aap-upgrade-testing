@@ -1,0 +1,37 @@
+---
+name: Main Branch CI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Full Validation Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible-core ansible-lint yamllint
+          ansible-galaxy collection install kubernetes.core
+
+      - name: Run all checks
+        run: |
+          yamllint -c .yamllint.yml .
+          ansible-lint --profile production --force-color
+          ansible-playbook --syntax-check playbooks/*.yml
+
+      - name: Report status
+        if: success()
+        run: echo "✓ All checks passed on main branch"

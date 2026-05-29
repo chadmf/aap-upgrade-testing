@@ -1,0 +1,27 @@
+---
+# Ansible Lint Configuration
+profile: production  # Strictest profile for production-quality code
+
+exclude_paths:
+  - .github/
+  - .git/
+  - collections/
+  - reports/
+  - chadsno2026-status-report.md  # Manual report, not linted
+  - venv/
+  - env/
+
+# Specific rule configurations
+warn_list:
+  - var-naming[no-role-prefix]  # Warn about variable naming
+  - yaml[line-length]  # Warn on long lines instead of failing
+
+# Enforce best practices
+enable_list:
+  - yaml
+  - no-changed-when
+  - no-handler
+  - command-instead-of-module
+
+# Task file naming requirements
+task_name_prefix: "{stem} | "  # Require descriptive task names
