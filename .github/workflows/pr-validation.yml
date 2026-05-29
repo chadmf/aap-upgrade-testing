@@ -121,4 +121,3 @@ jobs:
       - name: Syntax check playbooks
         run: |
           ansible-playbook --syntax-check playbooks/pre_upgrade_check.yml
-          ansible-playbook --syntax-check playbooks/check_chadsno2026.yml
