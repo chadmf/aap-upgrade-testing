@@ -4,6 +4,11 @@
 collections/
 *.log
 
+# ansible-navigator
+ansible-navigator.log
+artifacts/
+.ansible-navigator/
+
 # Reports (keep template but ignore generated reports)
 reports/*.md
 !reports/.gitkeep
