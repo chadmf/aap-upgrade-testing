@@ -6,7 +6,9 @@
 
 ## Context
 
-We need an automated way to validate AAP deployments on OpenShift before performing upgrades. Manual validation is time-consuming, error-prone, and doesn't scale across multiple clusters. We need a solution that:
+We need an automated way to validate AAP deployments on OpenShift before performing upgrades.
+Manual validation is time-consuming, error-prone, and does not scale across multiple clusters.
+We need a solution that:
 
 - Checks node health, operator status, AAP instance health, and database backend
 - Generates comprehensive reports for upgrade planning
@@ -46,7 +48,7 @@ We will implement health checks as an **Ansible role** (`aap_pre_upgrade_check`)
 
 ### Architecture Overview
 
-```
+```text
 Entry Playbook
     ↓
 roles/aap_pre_upgrade_check/
@@ -75,7 +77,7 @@ Output: Console + Markdown Report
 - ✅ **Maintainability:** Modular task files, single responsibility per file
 - ✅ **Flexibility:** Tag-based execution, configurable thresholds
 - ✅ **Automation-Friendly:** Can be integrated into CI/CD, scheduled jobs
-- ✅ **Documentation:** Ansible's self-documenting nature + README
+- ✅ **Documentation:** Ansible self-documenting nature and README
 
 ### Negative
 
@@ -98,24 +100,28 @@ Output: Console + Markdown Report
 ### 1. Script-Based Approach (Bash/Python)
 
 **Pros:**
+
 - Simpler for some operations
 - No Ansible dependency
 
 **Cons:**
+
 - Less idempotent
 - Harder to reuse and configure
 - No standard reporting format
-- Doesn't integrate with existing Ansible workflows
+- Does not integrate with existing Ansible workflows
 
-**Decision:** Rejected - doesn't fit Red Hat ecosystem
+**Decision:** Rejected - does not fit Red Hat ecosystem
 
 ### 2. Operator-Based Health Checker
 
 **Pros:**
+
 - Native Kubernetes integration
 - Real-time monitoring
 
 **Cons:**
+
 - More complex to develop and deploy
 - Requires cluster deployment permissions
 - Overhead for one-time pre-upgrade checks
@@ -125,10 +131,12 @@ Output: Console + Markdown Report
 ### 3. Ansible Collection (Multiple Roles)
 
 **Pros:**
+
 - More modular
 - Each check type as separate role
 
 **Cons:**
+
 - Overhead of multiple roles
 - More complex dependency management
 - Harder to maintain consistent state
@@ -140,7 +148,8 @@ Output: Console + Markdown Report
 ### Extension Points
 
 Future enhancements can add:
-- New check types (add task file + include in main.yml)
+
+- New check types (add task file and include in main.yml)
 - Alternative report formats (JSON, YAML)
 - Custom filter plugins for complex transformations
 - Molecule tests for validation
@@ -161,9 +170,10 @@ Future enhancements can add:
 
 ## References
 
-- Ansible Best Practices: https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html
-- kubernetes.core Collection: https://docs.ansible.com/ansible/latest/collections/kubernetes/core/
-- Red Hat CoP Practices: https://redhat-cop.github.io/automation-good-practices/
+- Ansible Best Practices:
+  <https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html>
+- kubernetes.core Collection: <https://docs.ansible.com/ansible/latest/collections/kubernetes/core/>
+- Red Hat CoP Practices: <https://redhat-cop.github.io/automation-good-practices/>
 
 ## Review History
 

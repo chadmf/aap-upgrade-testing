@@ -7,7 +7,8 @@
 | main    | :white_check_mark: |
 | < 1.0   | :x:                |
 
-Currently in active development. Once 1.0 is released, we will maintain security updates for the latest stable version.
+Currently in active development. Once 1.0 is released, we will maintain
+security updates for the latest stable version.
 
 ## Reporting a Vulnerability
 
@@ -15,7 +16,8 @@ Currently in active development. Once 1.0 is released, we will maintain security
 
 ### Reporting Process
 
-1. **Email:** Send details to **security@example.com** (replace with actual security contact)
+1. **Email:** Send details to **security@example.com** (replace with actual
+security contact)
 
 2. **Include:**
    - Description of the vulnerability
@@ -25,11 +27,13 @@ Currently in active development. Once 1.0 is released, we will maintain security
    - Your contact information
 
 3. **Response Timeline:**
+
    - Initial response: Within 48 hours
    - Status update: Within 5 business days
    - Fix timeline: Depends on severity
 
 4. **Disclosure:**
+
    - We will work with you on responsible disclosure
    - We aim to fix critical vulnerabilities within 30 days
    - Public disclosure after fix is released
@@ -39,21 +43,27 @@ Currently in active development. Once 1.0 is released, we will maintain security
 | Severity | Response Time | Examples |
 |----------|---------------|----------|
 | **Critical** | Same day | Credential exposure, RCE |
-| **High** | 1-3 days | Authentication bypass, sensitive data leak |
-| **Medium** | 1-2 weeks | Input validation issues, information disclosure |
-| **Low** | Next release | Minor information leaks, best practice violations |
+| **High** | 1-3 days | Authentication bypass, sensitive data
+leak |
+| **Medium** | 1-2 weeks | Input validation issues, information
+disclosure |
+| **Low** | Next release | Minor information leaks, best practice
+violations |
 
 ## Security Best Practices for Users
 
 ### Kubeconfig Security
 
 **Storage:**
-- Store kubeconfig in user-only readable location (`chmod 600 ~/.kube/config`)
+
+- Store kubeconfig in user-only readable location (`chmod 600
+~/.kube/config`)
 - Never commit kubeconfig to version control
 - Use separate kubeconfig files for different environments
 - Rotate credentials regularly
 
 **Usage with this role:**
+
 ```yaml
 # Pass kubeconfig path explicitly
 - hosts: localhost
@@ -73,6 +83,7 @@ Currently in active development. Once 1.0 is released, we will maintain security
 - Review report contents before sharing
 
 **Recommended permissions:**
+
 ```bash
 # Create reports directory with restricted access
 mkdir -p ~/aap-reports
@@ -85,7 +96,8 @@ ansible-playbook playbooks/pre_upgrade_check.yml \
 
 ### RBAC Minimum Permissions
 
-This role requires **read-only** access to cluster resources. Use a service account or kubeconfig with minimal permissions.
+This role requires **read-only** access to cluster resources. Use a service
+account or kubeconfig with minimal permissions.
 
 **Required Kubernetes Permissions:**
 
@@ -142,21 +154,26 @@ rules:
 ```
 
 **Do NOT grant:**
+
 - Cluster-admin access
 - Write permissions (create, update, delete, patch)
 - Access to namespaces not required for AAP
 
 ### Credential Handling
 
-**The role extracts database connection information from Kubernetes secrets.**
+**The role extracts database connection information from Kubernetes
+secrets.**
 
 **Security measures implemented:**
+
 - Secrets only read, never modified
 - Base64 decoding happens in-memory
-- Credentials not written to disk (except in kubeconfig which already exists)
+- Credentials not written to disk (except in kubeconfig which already
+exists)
 - Facts containing credentials cleared after use
 
 **User responsibilities:**
+
 - Ensure kubeconfig has appropriate permissions
 - Review Ansible output for any unexpected credential exposure
 - Rotate credentials if exposure suspected
@@ -167,20 +184,24 @@ rules:
 **If running this role in CI/CD pipelines:**
 
 1. **Use short-lived credentials:**
+
    - Service account tokens with expiration
    - OIDC authentication when possible
 
 2. **Restrict CI/CD access:**
+
    - Separate kubeconfig for CI/CD
    - Minimal RBAC permissions
    - Audit logging enabled
 
 3. **Secure artifacts:**
+
    - Encrypt reports before storage
    - Delete reports after processing
    - Restrict access to CI/CD secrets
 
 4. **Audit trail:**
+
    - Log when checks run
    - Track who triggered the check
    - Monitor for anomalies
@@ -190,16 +211,19 @@ rules:
 ### Current Implementation
 
 1. **Database credentials in facts:**
+
    - Database hostnames stored in Ansible facts
    - Passwords NOT stored (only queried via Kubernetes API)
    - Facts cleared at end of play
 
 2. **Debug output:**
+
    - May contain cluster topology information
    - Connection strings (hostnames, ports) may be visible
    - No passwords or tokens in debug output
 
 3. **Reports contain:**
+
    - ✅ Cluster version, node information (non-sensitive)
    - ✅ Operator status, AAP version (non-sensitive)
    - ⚠️ Database hostnames and connection details (internal only)
@@ -208,6 +232,7 @@ rules:
 ### Hardening Recommendations
 
 1. **Restrict playbook execution:**
+
    ```bash
    # Run from bastion host only
    # Use Ansible Vault for any sensitive variables
@@ -215,6 +240,7 @@ rules:
    ```
 
 2. **Network security:**
+
    ```bash
    # Ensure Kubernetes API access is over TLS
    # Verify certificate validation enabled
@@ -222,6 +248,7 @@ rules:
    ```
 
 3. **Monitoring:**
+
    ```bash
    # Enable audit logging on Kubernetes cluster
    # Monitor for unusual API access patterns
@@ -243,18 +270,23 @@ When a security vulnerability is reported and confirmed:
 
 | Date | Type | Findings | Status |
 |------|------|----------|--------|
-| 2026-05-29 | Initial Development | Multiple findings documented | In Progress |
+| 2026-05-29 | Initial Development | Multiple findings documented |
+In Progress |
 
 Detailed findings tracked in `.github/SECURITY_REVIEW.md`
 
 ## Contact
 
 For security concerns or questions:
+
 - **Security Email:** security@example.com
 - **GitHub Issues:** For non-sensitive questions only
 
 ## References
 
-- [OWASP Ansible Security](https://cheatsheetseries.owasp.org/cheatsheets/Ansible_Security_Cheat_Sheet.html)
-- [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/security-checklist/)
-- [Ansible Vault Documentation](https://docs.ansible.com/ansible/latest/user_guide/vault.html)
+- [OWASP Ansible Security]
+  <https://cheatsheetseries.owasp.org/cheatsheets/Ansible_Security_Cheat_Sheet.html>
+- [Kubernetes Security Best Practices]
+  <https://kubernetes.io/docs/concepts/security/security-checklist/>
+- [Ansible Vault Documentation]
+  <https://docs.ansible.com/ansible/latest/user_guide/vault.html>

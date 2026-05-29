@@ -6,11 +6,14 @@
 
 ## Executive Summary
 
-The chadsno2026 OpenShift cluster is operational with AAP 2.6 successfully deployed and running. However, a failed cloud-native-postgresql operator upgrade requires attention to ensure future database management operations function correctly.
+The chadsno2026 OpenShift cluster is operational with AAP 2.6 successfully deployed and running.
+However, a failed cloud-native-postgresql operator upgrade requires attention to ensure future
+database management operations function correctly.
 
 ## Node Status
 
 **Node Details:**
+
 - **Name**: `1c-69-7a-a4-45-a8`
 - **Status**: Ready ✓
 - **Roles**: control-plane, master, worker (single-node cluster)
@@ -21,10 +24,12 @@ The chadsno2026 OpenShift cluster is operational with AAP 2.6 successfully deplo
 - **Container Runtime**: cri-o://1.34.6-2.rhaos4.21
 
 **Network:**
+
 - **Internal IP**: 192.168.68.61
 - **External IP**: None
 
 **Resource Usage:**
+
 - **CPU**: 6092m / 52% of capacity
 - **Memory**: 20677Mi / 67% of capacity
 
@@ -37,6 +42,7 @@ The chadsno2026 OpenShift cluster is operational with AAP 2.6 successfully deplo
 ### Operator Installation
 
 **ClusterServiceVersion (CSV):**
+
 - **Name**: aap-operator.v2.6.0-0.1777410689
 - **Display Name**: Ansible Automation Platform
 - **Version**: 2.6.0+0.1777410689
@@ -62,15 +68,17 @@ All AAP operator components are running in the `ansible-automation-platform` nam
 ### AAP Instance (Custom Resource)
 
 **AnsibleAutomationPlatform CR:**
+
 - **Name**: aap
 - **Namespace**: ansible-automation-platform
 - **Age**: 55 days
 - **Version**: 2.6.20260422
-- **URL**: https://aap-ansible-automation-platform.apps.chadsno2026.fteam.local
+- **URL**: <https://aap-ansible-automation-platform.apps.chadsno2026.fteam.local>
 - **Admin User**: admin
 - **Admin Password Secret**: aap-admin-password
 
 **Reconciliation Status:**
+
 - **Last Reconciliation**: 2026-05-29 07:04:29 UTC (today)
 - **Status**: Successful ✓
 - **Ansible Run Results**:
@@ -80,11 +88,13 @@ All AAP operator components are running in the `ansible-automation-platform` nam
   - Failures: 0
 
 **Conditions:**
+
 - **Running**: True (Awaiting next reconciliation)
 - **Successful**: True (Last reconciliation succeeded)
 - **Failure**: False
 
 **Configuration Secrets:**
+
 - Controller Database: `external-postgres-configuration-controller`
 - Gateway Database: `external-postgres-configuration-gateway`
 - Gateway Redis: `aap-gateway-redis-configuration`
@@ -102,6 +112,7 @@ All AAP operator components are running in the `ansible-automation-platform` nam
 AAP is configured to use **external PostgreSQL** (not embedded database):
 
 **Database Cluster:**
+
 - **Type**: cloud-native-postgresql (EDB Postgres for Kubernetes)
 - **Cluster Name**: demo-pg
 - **Namespace**: edb-pg-demo
@@ -109,12 +120,14 @@ AAP is configured to use **external PostgreSQL** (not embedded database):
 - **Age**: 64 days
 
 **Cluster Status:**
+
 - **Instances**: 2
 - **Ready Instances**: 2 ✓
 - **Status**: Cluster in healthy state ✓
 - **Primary**: demo-pg-1
 
 **PostgreSQL Pods:**
+
 | Pod | Status | Restarts | Age |
 |-----|--------|----------|-----|
 | demo-pg-1 | 1/1 Running | 4 | 64d |
@@ -125,6 +138,7 @@ AAP is configured to use **external PostgreSQL** (not embedded database):
 The cloud-native-postgresql operator has encountered upgrade problems:
 
 **Operator Versions:**
+
 | Version | Status |
 |---------|--------|
 | v1.28.0 | Succeeded (replaced) |
@@ -132,17 +146,21 @@ The cloud-native-postgresql operator has encountered upgrade problems:
 | v1.28.2 | **Failed** |
 
 **Issue Details:**
+
 - Operator attempted to upgrade from v1.28.1 to v1.28.2
 - v1.28.2 upgrade failed
 - v1.28.1 is stuck in "Replacing" state
 
 **Current Impact:**
+
 - **Database cluster (demo-pg)**: ✓ Healthy and operational
 - **AAP services**: ✓ Functioning normally
 - **Database operator**: ⚠️ Stuck in upgrade cycle
 
 **Risk Assessment:**
+
 While the PostgreSQL cluster and AAP are currently healthy, the failed operator upgrade could impact:
+
 - Future database scaling operations
 - Automatic failover capabilities
 - Database backup/restore operations
@@ -158,7 +176,8 @@ While the PostgreSQL cluster and AAP are currently healthy, the failed operator 
 
 2. **Database Operator Remediation (Priority: Medium):**
    - Investigate cloud-native-postgresql operator upgrade failure
-   - Review operator logs: `kubectl logs -n ansible-automation-platform deployment/<operator-pod> -c manager`
+   - Review operator logs:
+     `kubectl logs -n ansible-automation-platform deployment/<operator-pod> -c manager`
    - Consider rollback to v1.28.0 if v1.28.1 is unstable
    - Document resolution steps for future upgrades
 
@@ -191,7 +210,8 @@ KUBECONFIG=~/.kube/kubeconfig-noingress kubectl top nodes
 # AAP operator status
 KUBECONFIG=~/.kube/kubeconfig-noingress kubectl get csv -n ansible-automation-platform
 KUBECONFIG=~/.kube/kubeconfig-noingress kubectl get pods -n ansible-automation-platform
-KUBECONFIG=~/.kube/kubeconfig-noingress kubectl get ansibleautomationplatform -n ansible-automation-platform
+KUBECONFIG=~/.kube/kubeconfig-noingress kubectl get ansibleautomationplatform \
+  -n ansible-automation-platform
 
 # Database status
 KUBECONFIG=~/.kube/kubeconfig-noingress kubectl get cluster -n edb-pg-demo
@@ -202,39 +222,39 @@ KUBECONFIG=~/.kube/kubeconfig-noingress kubectl get pods -n edb-pg-demo
 
 ## Appendix: System Architecture
 
-```
-┌─────────────────────────────────────────────────┐
-│           chadsno2026 OpenShift Node            │
-│  (1c-69-7a-a4-45-a8 - 192.168.68.61)           │
-│  OpenShift 4.21 / RHCOS 9.6                     │
-└─────────────────────────────────────────────────┘
-                      │
-        ┌─────────────┴─────────────┐
-        │                           │
-        ▼                           ▼
-┌───────────────────┐    ┌────────────────────────┐
-│ Namespace:        │    │ Namespace:             │
-│ ansible-          │    │ edb-pg-demo            │
-│ automation-       │    │                        │
-│ platform          │    │ ┌──────────────────┐   │
-│                   │    │ │ demo-pg cluster  │   │
-│ ┌───────────────┐ │    │ │ - demo-pg-1      │   │
-│ │ AAP 2.6       │ │    │ │ - demo-pg-2      │   │
-│ │ Instance      │◄┼────┤ │ (PostgreSQL HA)  │   │
-│ │               │ │    │ └──────────────────┘   │
-│ └───────────────┘ │    │                        │
-│                   │    │ Managed by:            │
-│ ┌───────────────┐ │    │ cloud-native-          │
-│ │ 7 Operators:  │ │    │ postgresql v1.28.1     │
-│ │ - Gateway     │ │    │ (upgrade stuck)        │
-│ │ - Controller  │ │    │                        │
-│ │ - Hub         │ │    └────────────────────────┘
-│ │ - EDA         │ │
-│ │ - Lightspeed  │ │
-│ │ - Metrics     │ │
-│ │ - Resource    │ │
-│ └───────────────┘ │
-└───────────────────┘
+```text
+┌──────────────────────────────────────┐
+│    chadsno2026 OpenShift Node        │
+│  (1c-69-7a-a4-45-a8)                 │
+│  OpenShift 4.21 / RHCOS 9.6          │
+└──────────────────────────────────────┘
+                 │
+       ┌─────────┴─────────┐
+       │                   │
+       ▼                   ▼
+┌────────────┐    ┌─────────────────┐
+│ Namespace: │    │ Namespace:      │
+│ ansible-   │    │ edb-pg-demo     │
+│ automation-│    │                 │
+│ platform   │    │ ┌─────────────┐ │
+│            │    │ │ demo-pg     │ │
+│ ┌────────┐ │    │ │ cluster     │ │
+│ │ AAP    │ │    │ │ - pg-1      │ │
+│ │ 2.6    │◄┼────┤ │ - pg-2      │ │
+│ │        │ │    │ │ (Postgres)  │ │
+│ └────────┘ │    │ └─────────────┘ │
+│            │    │                 │
+│ ┌────────┐ │    │ Managed by:     │
+│ │7 Ops:  │ │    │ cloud-native-   │
+│ │Gateway │ │    │ postgresql      │
+│ │Control │ │    │ v1.28.1         │
+│ │Hub     │ │    │ (stuck)         │
+│ │EDA     │ │    └─────────────────┘
+│ │Light   │ │
+│ │Metrics │ │
+│ │Resource│ │
+│ └────────┘ │
+└────────────┘
 ```
 
 ---

@@ -31,6 +31,7 @@ pre-commit install
 ### Review Assignment
 
 You'll be assigned to PRs based on:
+
 - **CODEOWNERS** file (automatic assignment)
 - **Manual assignment** by PR author or maintainer
 - **Your expertise** (architecture, security, specific area)
@@ -40,23 +41,27 @@ You'll be assigned to PRs based on:
 ### 1. Initial Triage (2 minutes)
 
 **Check:**
+
 - [ ] PR description is clear
 - [ ] CI checks are passing (or running)
 - [ ] PR size is reasonable (<500 lines changed)
 - [ ] Branch is up to date with main
 
 **If Not Ready:**
+
 - Comment: "Please ensure CI passes and branch is up to date with main before review."
 - Set status: "Changes requested"
 
 ### 2. Understand the Change (5-10 minutes)
 
 **Read:**
+
 - PR description and linked issues
 - File diffs in GitHub
 - Related code context
 
 **Ask Yourself:**
+
 - What problem does this solve?
 - How does it solve it?
 - Does the solution make sense?
@@ -64,11 +69,13 @@ You'll be assigned to PRs based on:
 ### 3. Review Code (15-30 minutes)
 
 **Use appropriate checklist:**
+
 - **Code review:** General quality, Ansible best practices
 - **Architecture review:** `.github/ARCHITECTURE_REVIEW.md`
 - **Security review:** `.github/SECURITY_REVIEW.md`
 
 **Test Locally (Optional but Recommended):**
+
 ```bash
 # Check out the PR branch
 gh pr checkout <PR-number>
@@ -94,43 +101,50 @@ ansible-playbook playbooks/pre_upgrade_check.yml \
 **Comment Types:**
 
 - **Blocking:** Must be fixed before merge
-  ```
-  ❌ This credential extraction needs `no_log: true` to prevent passwords 
+
+  ```text
+  ❌ This credential extraction needs `no_log: true` to prevent passwords
   from appearing in output. This is a security requirement.
   ```
 
 - **Non-blocking:** Suggestions for improvement
-  ```
+
+  ```text
   💡 Consider using a filter plugin here for better testability. Not blocking,
   but would improve maintainability.
   ```
 
 - **Question:** Seeking clarification
-  ```
+
+  ```text
   ❓ Why did you choose `failed_when: false` here instead of a conditional?
   Could you explain the reasoning?
   ```
 
 - **Praise:** Acknowledge good work
-  ```
+
+  ```text
   ✅ Excellent error handling here. The fail message is very actionable.
   ```
 
 ### 5. Make Decision (1 minute)
 
 **Approve:** No issues or only minor suggestions
-```
+
+```text
 ✅ Looks good! Minor suggestion about the filter plugin but not blocking.
 ```
 
 **Request Changes:** Issues that must be fixed
-```
-⚠️ Please address the security issue on line 42 before merging. See my 
+
+```text
+⚠️ Please address the security issue on line 42 before merging. See my
 comment for details.
 ```
 
 **Comment:** Waiting for more information
-```
+
+```text
 ❓ I've left a few questions. Please clarify and I'll continue the review.
 ```
 
@@ -143,6 +157,7 @@ comment for details.
   - Bad: `Check path`
 
 - [ ] **Variables** properly documented in `defaults/main.yml`
+
   ```yaml
   # Description of what this does and valid values
   variable_name: default_value
@@ -188,6 +203,7 @@ comment for details.
 #### Issue: Missing `no_log` on Secret Handling
 
 **Bad:**
+
 ```yaml
 - name: Extract password
   set_fact:
@@ -195,6 +211,7 @@ comment for details.
 ```
 
 **Fix:**
+
 ```yaml
 - name: Extract password
   set_fact:
@@ -203,14 +220,16 @@ comment for details.
 ```
 
 **Comment:**
-```
-Please add `no_log: true` to this task. Without it, the password will 
+
+```text
+Please add `no_log: true` to this task. Without it, the password will
 appear in Ansible output. See SECURITY_REVIEW.md section 2.
 ```
 
 #### Issue: Hardcoded Value
 
 **Bad:**
+
 ```yaml
 - name: Check AAP namespace
   k8s_info:
@@ -218,6 +237,7 @@ appear in Ansible output. See SECURITY_REVIEW.md section 2.
 ```
 
 **Fix:**
+
 ```yaml
 - name: Check AAP namespace
   k8s_info:
@@ -225,14 +245,16 @@ appear in Ansible output. See SECURITY_REVIEW.md section 2.
 ```
 
 **Comment:**
-```
-Please use the `aap_namespace` variable instead of hardcoding. This makes 
+
+```text
+Please use the `aap_namespace` variable instead of hardcoding. This makes
 the role reusable across different installations.
 ```
 
 #### Issue: Unclear Task Name
 
 **Bad:**
+
 ```yaml
 - name: Check things
   k8s_info:
@@ -240,6 +262,7 @@ the role reusable across different installations.
 ```
 
 **Fix:**
+
 ```yaml
 - name: Operators | Get operator pods
   k8s_info:
@@ -250,7 +273,8 @@ the role reusable across different installations.
 ```
 
 **Comment:**
-```
+
+```text
 Task name should be more specific. Suggest: "Operators | Get operator pods"
 Also, consider adding a label selector to only get operator pods.
 ```
@@ -297,18 +321,23 @@ cat reports/pre-upgrade-check-*.md
 ### Comment Guidelines
 
 **Be specific:**
+
 - ❌ "Fix this"
 - ✅ "Add `no_log: true` on line 42 to prevent passwords in output"
 
 **Be constructive:**
+
 - ❌ "This is wrong"
 - ✅ "This approach works, but consider using X instead because Y"
 
 **Provide context:**
+
 - ❌ "Use a filter plugin"
-- ✅ "Consider using a filter plugin here for better testability. Large Jinja2 templates are harder to test and reuse. See `docs/adr/` for examples."
+- ✅ "Consider using a filter plugin here for better testability. Large Jinja2 templates are harder to test
+  and reuse. See `docs/adr/` for examples."
 
 **Distinguish blocking vs. non-blocking:**
+
 - Blocking: "Please fix before merge"
 - Non-blocking: "Suggestion for improvement (not blocking)"
 
@@ -364,25 +393,29 @@ cat reports/pre-upgrade-check-*.md
 ## Time Management
 
 **Target times:**
-- Small PRs (<50 lines): 15 minutes
+
+- Small PRs (less than 50 lines): 15 minutes
 - Medium PRs (50-200 lines): 30 minutes
 - Large PRs (200-500 lines): 60 minutes
-- Huge PRs (>500 lines): Request split into smaller PRs
+- Huge PRs (more than 500 lines): Request split into smaller PRs
 
 **SLA:**
+
 - First review within 2 business days
 - Re-review within 1 business day
 
-**If you can't meet SLA:**
-- Comment in PR: "I'll need until [date] to review this thoroughly"
+**If you cannot meet SLA:**
+
+- Comment in PR: "I will need until [date] to review this thoroughly"
 - Or reassign to another reviewer
 
 ## Common Reviewer Mistakes
 
 ### Mistake: Nitpicking Style
 
-**Don't:**
-```
+**Do not:**
+
+```text
 Change variable name from `aap_cpu_threshold` to `aap_cpu_warning_threshold`
 ```
 
@@ -392,40 +425,46 @@ Change variable name from `aap_cpu_threshold` to `aap_cpu_warning_threshold`
 
 ### Mistake: Requesting Major Rewrites
 
-**Don't:**
-```
+**Do not:**
+
+```text
 Rewrite this entire file to use filter plugins instead of Jinja2
 ```
 
 **Unless:** The current approach has fundamental flaws
 
 **Do:**
-```
-This works fine. For future improvement, consider filter plugins for 
+
+```text
+This works fine. For future improvement, consider filter plugins for
 better testability. Not required for this PR.
 ```
 
 ### Mistake: Blocking on Personal Preference
 
-**Don't:**
-```
+**Do not:**
+
+```text
 I prefer approach X over approach Y [when both are valid]
 ```
 
 **Do:**
-```
-Both approaches work. I slightly prefer X because [reason], but Y is 
+
+```text
+Both approaches work. I slightly prefer X because [reason], but Y is
 fine for this use case.
 ```
 
 ### Mistake: Approving Without Reading
 
-**Don't:**
+**Do not:**
+
 - Approve because CI passed
 - Approve because you trust the author
 - Approve without understanding the change
 
 **Do:**
+
 - Read the actual code
 - Understand what it does
 - Verify it does what PR description says
@@ -456,9 +495,10 @@ fine for this use case.
 
 ## Resources
 
-- **Ansible Lint Rules:** https://ansible-lint.readthedocs.io/rules/
-- **Ansible Best Practices:** https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html
-- **Red Hat CoP:** https://redhat-cop.github.io/automation-good-practices/
+- **Ansible Lint Rules:** <https://ansible-lint.readthedocs.io/rules/>
+- **Ansible Best Practices:**
+  <https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html>
+- **Red Hat CoP:** <https://redhat-cop.github.io/automation-good-practices/>
 
 ## Questions?
 

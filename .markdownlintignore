@@ -1,0 +1,4 @@
+# Ignore test results and generated reports
+TEST-RESULTS.md
+playbooks/reports/
+reports/

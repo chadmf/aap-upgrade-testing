@@ -12,7 +12,8 @@
 - name: Extract database host from secret
   ansible.builtin.set_fact:
     db_host: "{{ db_secret_info.resources[0].data.host | b64decode }}"
-    db_type: "{{ db_secret_info.resources[0].data.type | b64decode | default('postgresql') }}"
+    db_type: >-
+      {{ db_secret_info.resources[0].data.type | b64decode | default('postgresql') }}
   when:
     - db_secret_info.resources is defined
     - db_secret_info.resources | length > 0
@@ -24,7 +25,8 @@
 
 - name: Use detected or configured database namespace
   ansible.builtin.set_fact:
-    active_db_namespace: "{{ detected_db_namespace | default(aap_database_namespace) }}"
+    active_db_namespace: >-
+      {{ detected_db_namespace | default(aap_database_namespace) }}
   when: db_host is defined
 
 - name: Get cloud-native-postgresql Cluster resources
@@ -59,7 +61,8 @@
 
 - name: Analyze database configuration
   ansible.builtin.set_fact:
-    aap_check_results: "{{ aap_check_results | combine({'database': db_analysis}, recursive=true) }}"
+    aap_check_results: >-
+      {{ aap_check_results | combine({'database': db_analysis}, recursive=true) }}
   when: db_host is defined
   vars:
     db_analysis: |
@@ -98,7 +101,9 @@
         {%- set _ = db_data.update({'pods': pods}) -%}
       {%- endif -%}
       {%- if postgres_csv_info.resources | default([]) | length > 0 -%}
-        {%- set postgres_csvs = postgres_csv_info.resources | selectattr('metadata.name', 'match', '.*postgres.*') | list -%}
+        {%- set postgres_csvs = postgres_csv_info.resources
+                                | selectattr('metadata.name', 'match', '.*postgres.*')
+                                | list -%}
         {%- if postgres_csvs | length > 0 -%}
           {%- set operators = {} -%}
           {%- for csv in postgres_csvs -%}
@@ -117,42 +122,60 @@
 
 - name: Set embedded database flag
   ansible.builtin.set_fact:
-    aap_check_results: "{{ aap_check_results | combine({'database': {'type': 'embedded', 'external': false}}, recursive=true) }}"
+    aap_check_results: >-
+      {{ aap_check_results | combine({'database': {'type': 'embedded', 'external': false}}, recursive=true) }}
   when: db_host is not defined
 
 - name: Check for unhealthy database cluster
   ansible.builtin.set_fact:
-    aap_check_results: "{{ aap_check_results | combine({'issues': aap_check_results.issues + [issue_msg]}, recursive=true) }}"
+    aap_check_results: >-
+      {{ aap_check_results | combine({'issues': aap_check_results.issues + [issue_msg]}, recursive=true) }}
   when:
     - aap_check_results.database.external | default(false)
-    - aap_check_results.database.cluster_status | default('') != 'Cluster in healthy state'
+    - >-
+      aap_check_results.database.cluster_status | default('') != 'Cluster in healthy state'
+    - aap_check_results.database.cluster_name is defined
   vars:
-    issue_msg: "Database cluster {{ aap_check_results.database.cluster_name }} is unhealthy (status: {{ aap_check_results.database.cluster_status }})"
+    issue_msg: >-
+      Database cluster {{ aap_check_results.database.cluster_name | default('unknown') }}
+      is unhealthy (status: {{ aap_check_results.database.cluster_status | default('unknown') }})
 
 - name: Check for database instance mismatch
   ansible.builtin.set_fact:
-    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+    aap_check_results: >-
+      {{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}
   when:
     - aap_check_results.database.external | default(false)
-    - aap_check_results.database.instances | default(0) != aap_check_results.database.ready_instances | default(0)
+    - >-
+      aap_check_results.database.instances | default(0)
+      != aap_check_results.database.ready_instances | default(0)
   vars:
-    warning_msg: "Database cluster has {{ aap_check_results.database.ready_instances }}/{{ aap_check_results.database.instances }} instances ready"
+    warning_msg: >-
+      Database cluster has {{ aap_check_results.database.ready_instances }}/{{
+      aap_check_results.database.instances }} instances ready
 
 - name: Check for stuck database operator upgrades
   ansible.builtin.set_fact:
-    aap_check_results: "{{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}"
+    aap_check_results: >-
+      {{ aap_check_results | combine({'warnings': aap_check_results.warnings + [warning_msg]}, recursive=true) }}
   loop: "{{ aap_check_results.database.operators | default({}) | dict2items }}"
   when: item.value.phase in ['Replacing', 'Failed']
   vars:
-    warning_msg: "Database operator {{ item.key }} in {{ item.value.phase }} state (version {{ item.value.version }})"
+    warning_msg: >-
+      Database operator {{ item.key }} in {{ item.value.phase }} state
+      (version {{ item.value.version }})
 
 - name: Fail on unhealthy database if configured
   ansible.builtin.fail:
     msg: "Database cluster is unhealthy. Check issues list for details."
   when:
     - aap_fail_on_unhealthy_database | bool
-    - aap_check_results.issues | select('match', '.*Database cluster.*unhealthy.*') | list | length > 0
+    - >-
+      aap_check_results.issues | select('match', '.*Database cluster.*unhealthy.*')
+      | list | length > 0
 
 - name: Display database status summary
   ansible.builtin.debug:
-    msg: "Database type: {{ aap_check_results.database.type }}, External: {{ aap_check_results.database.external }}"
+    msg: >-
+      Database type: {{ aap_check_results.database.type }},
+      External: {{ aap_check_results.database.external }}
