@@ -172,6 +172,7 @@ Create cluster-specific playbooks by copying `pre_upgrade_check.yml` and setting
 ```
 
 Examples in this repo:
+
 - `check_chadsno2026.yml` - chadsno2026 cluster configuration
 - `check_aap_lab.yml` - aap-lab cluster configuration
 
@@ -382,6 +383,7 @@ podman run --rm quay.io/ansible/creator-ee:latest \
 | `$(pwd)/reports` | `/runner/project/reports` | Report output | `:Z,rw` (read-write) |
 
 **SELinux Labels (`:Z`)** - Required for Podman:
+
 - `:Z` = private unshared label
 - `:z` = shared label
 - `,rw` = read-write (default is read-only)
@@ -454,7 +456,8 @@ podman run --rm quay.io/ansible/creator-ee:latest \
 ```
 
 Expected output:
-```
+
+```text
 kubernetes.core               3.1.0
 ```
 
@@ -539,6 +542,7 @@ ansible-playbook playbooks/pre_upgrade_check.yml --check
 ## Tested and Verified
 
 ✅ All container execution tests passing (2026-05-29):
+
 - Syntax validation in container
 - Check mode (dry-run) execution
 - Ansible 2.16.3 with Python 3.12 in container
